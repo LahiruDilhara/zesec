@@ -14,12 +14,13 @@ class ICleaner(Protocol):
     """
 
     @abstractmethod
-    def clean_file(self, file_path: Path, passes: int = 3) -> bool:
-        """Securely clean a file by overwriting and deleting.
+    def clean_file(self, file_path: Path, passes: int = 3, delete: bool = True) -> bool:
+        """Securely clean a file by overwriting and optionally deleting.
         
         Args:
             file_path: Path to the file to clean
             passes: Number of overwrite passes (default: 3)
+            delete: If True, delete file after cleaning (default: True)
             
         Returns:
             True if successful, False otherwise
@@ -32,6 +33,7 @@ class ICleaner(Protocol):
         dir_path: Path,
         passes: int = 3,
         recursive: bool = True,
+        delete: bool = True,
     ) -> bool:
         """Securely clean all files in a directory.
         
@@ -39,6 +41,7 @@ class ICleaner(Protocol):
             dir_path: Path to the directory
             passes: Number of overwrite passes per file
             recursive: If True, process subdirectories
+            delete: If True, delete files after cleaning (default: True)
             
         Returns:
             True if all files cleaned successfully, False otherwise

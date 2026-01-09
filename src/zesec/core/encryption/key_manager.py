@@ -1,5 +1,6 @@
 """Key generation and derivation management."""
 
+import base64
 import os
 from pathlib import Path
 from typing import Optional
@@ -83,6 +84,8 @@ class KeyManager:
     def generate_key_file(self, key_file_path: Path) -> bool:
         """Generate and save a random encryption key to a file.
         
+        The key is saved as base64-encoded text (UTF-8) for human readability.
+        
         Args:
             key_file_path: Path where the key file should be saved
             
@@ -96,8 +99,12 @@ class KeyManager:
             # Generate random key
             key = self.generate_key()
 
-            # Save key to file
-            if not self._file_handler.write_file(key_file_path, key):
+            # Encode key as base64 for human readability (UTF-8)
+            key_base64 = base64.b64encode(key).decode('utf-8')
+            
+            # Save key to file as UTF-8 encoded bytes
+            key_bytes = key_base64.encode('utf-8')
+            if not self._file_handler.write_file(key_file_path, key_bytes):
                 raise KeyDerivationError(f"Failed to write key file: {key_file_path}")
 
             self._logger.info(f"Key file generated: {key_file_path}")
@@ -109,6 +116,8 @@ class KeyManager:
 
     def load_key_file(self, key_file_path: Path) -> bytes:
         """Load encryption key from a file.
+        
+        The key file is expected to be base64-encoded text (UTF-8).
         
         Args:
             key_file_path: Path to the key file
@@ -126,8 +135,20 @@ class KeyManager:
             if not self._file_handler.file_exists(key_file_path):
                 raise KeyDerivationError(f"Key file not found: {key_file_path}")
 
-            # Read key from file
-            key = self._file_handler.read_file(key_file_path)
+            # Read key from file (as bytes)
+            key_data = self._file_handler.read_file(key_file_path)
+            
+            # Decode from UTF-8 to get base64 string
+            try:
+                key_base64 = key_data.decode('utf-8').strip()
+            except UnicodeDecodeError as e:
+                raise KeyDerivationError(f"Key file is not valid UTF-8: {e}") from e
+            
+            # Decode from base64 to get key bytes
+            try:
+                key = base64.b64decode(key_base64)
+            except Exception as e:
+                raise KeyDerivationError(f"Key file is not valid base64: {e}") from e
 
             # Validate key size
             if len(key) != self._settings.KEY_SIZE:

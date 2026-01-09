@@ -40,7 +40,7 @@ class CleanCommand(BaseCommand):
         """Execute clean command.
         
         Args:
-            args: Command arguments (file/directory path)
+            args: Command arguments (file/directory path and options)
             
         Returns:
             None
@@ -48,10 +48,20 @@ class CleanCommand(BaseCommand):
         if not args:
             cmd_name = "clean-dir" if self._is_directory else "clean"
             console.print(f"[red]Error: {cmd_name} requires a path[/red]")
-            console.print(f"[dim]Usage: {cmd_name} <path>[/dim]")
+            console.print(f"[dim]Usage: {cmd_name} <path> [--no-delete][/dim]")
             return None
         
         target_path = Path(args[0])
+        delete = True  # Default: delete after cleaning
+        
+        # Parse options
+        i = 1
+        while i < len(args):
+            if args[i] == "--no-delete":
+                delete = False
+                i += 1
+            else:
+                i += 1
         
         try:
             # Resolve path
@@ -71,12 +81,13 @@ class CleanCommand(BaseCommand):
                     return None
                 
                 # Confirm action
-                if not Confirm.ask(f"Securely clean all files in {target_path}?"):
+                action = "clean" if delete else "overwrite (without deleting)"
+                if not Confirm.ask(f"Securely {action} all files in {target_path}?"):
                     console.print("[dim]Cancelled.[/dim]")
                     return None
                 
                 console.print(f"[cyan]Cleaning directory: {target_path}[/cyan]")
-                success = cleaner.clean_directory(target_path)
+                success = cleaner.clean_directory(target_path, delete=delete)
                 
             else:
                 # Clean single file
@@ -85,15 +96,19 @@ class CleanCommand(BaseCommand):
                     return None
                 
                 # Confirm action
-                if not Confirm.ask(f"Securely clean {target_path}?"):
+                action = "clean" if delete else "overwrite (without deleting)"
+                if not Confirm.ask(f"Securely {action} {target_path}?"):
                     console.print("[dim]Cancelled.[/dim]")
                     return None
                 
                 console.print(f"[cyan]Cleaning file: {target_path}[/cyan]")
-                success = cleaner.clean_file(target_path)
+                success = cleaner.clean_file(target_path, delete=delete)
             
             if success:
-                console.print("[green]✓ Cleaning completed successfully[/green]")
+                if delete:
+                    console.print("[green]✓ Cleaning completed successfully[/green]")
+                else:
+                    console.print("[green]✓ File overwritten successfully (not deleted)[/green]")
             else:
                 console.print("[red]✗ Cleaning failed[/red]")
                 
@@ -106,29 +121,37 @@ class CleanCommand(BaseCommand):
         """Get help text."""
         if self._is_directory:
             return """
-            clean-dir <directory>
+            clean-dir <directory> [options]
             
             Securely clean all files in a directory by overwriting and deleting.
             
             Arguments:
               directory    Path to the directory to clean
             
+            Options:
+              --no-delete  Overwrite files but don't delete them
+            
             Examples:
               clean-dir /tmp/old_files
               clean-dir documents
+              clean-dir /tmp/old_files --no-delete
             """
         else:
             return """
-            clean <file>
+            clean <file> [options]
             
             Securely clean a file by overwriting with zeros and deleting.
             
             Arguments:
               file    Path to the file to clean
             
+            Options:
+              --no-delete  Overwrite file but don't delete it
+            
             Examples:
               clean document.txt
               clean /path/to/file.txt
+              clean document.txt --no-delete
             """
 
 

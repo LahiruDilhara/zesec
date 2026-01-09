@@ -37,12 +37,13 @@ class CleanerService:
         self._settings = settings or Settings.get_instance()
         self._logger = logger or get_logger(__name__)
 
-    def clean_file(self, file_path: Path, passes: int = 3) -> bool:
-        """Securely clean a file by overwriting and deleting.
+    def clean_file(self, file_path: Path, passes: int = 3, delete: bool = True) -> bool:
+        """Securely clean a file by overwriting and optionally deleting.
         
         Args:
             file_path: Path to the file to clean
             passes: Number of overwrite passes (default: 3)
+            delete: If True, delete file after cleaning (default: True)
             
         Returns:
             True if successful, False otherwise
@@ -52,7 +53,7 @@ class CleanerService:
                 self._logger.warning(f"File does not exist: {file_path}")
                 return False
 
-            self._logger.info(f"Cleaning file: {file_path} ({passes} passes)")
+            self._logger.info(f"Cleaning file: {file_path} ({passes} passes, delete={delete})")
 
             # Overwrite file multiple times
             for pass_num in range(1, passes + 1):
@@ -61,14 +62,18 @@ class CleanerService:
                     self._logger.error(f"Failed on pass {pass_num}")
                     return False
 
-            # Delete file
-            try:
-                file_path.unlink()
-                self._logger.success(f"File cleaned and deleted: {file_path}")
-                return True
-            except Exception as e:
-                self._logger.error(f"Failed to delete file {file_path}: {e}")
-                return False
+            # Delete file if requested
+            if delete:
+                try:
+                    file_path.unlink()
+                    self._logger.success(f"File cleaned and deleted: {file_path}")
+                except Exception as e:
+                    self._logger.error(f"Failed to delete file {file_path}: {e}")
+                    return False
+            else:
+                self._logger.success(f"File cleaned (not deleted): {file_path}")
+            
+            return True
 
         except Exception as e:
             self._logger.error(f"File cleaning failed: {e}")
@@ -79,6 +84,7 @@ class CleanerService:
         dir_path: Path,
         passes: int = 3,
         recursive: bool = True,
+        delete: bool = True,
     ) -> bool:
         """Securely clean all files in a directory.
         
@@ -86,6 +92,7 @@ class CleanerService:
             dir_path: Path to the directory
             passes: Number of overwrite passes per file
             recursive: If True, process subdirectories
+            delete: If True, delete files after cleaning (default: True)
             
         Returns:
             True if all files cleaned successfully, False otherwise
@@ -98,11 +105,11 @@ class CleanerService:
         pattern = "**/*" if recursive else "*"
         files = [f for f in dir_path.glob(pattern) if f.is_file()]
 
-        self._logger.info(f"Cleaning {len(files)} files in {dir_path}")
+        self._logger.info(f"Cleaning {len(files)} files in {dir_path} (delete={delete})")
 
         all_success = True
         for file_path in files:
-            if not self.clean_file(file_path, passes):
+            if not self.clean_file(file_path, passes, delete=delete):
                 all_success = False
 
         return all_success
@@ -132,6 +139,9 @@ class CleanerService:
             for pass_num in range(passes):
                 # Open file in read-write mode
                 with open(file_path, "r+b") as f:
+                    # Seek to beginning to ensure we overwrite from the start
+                    f.seek(0)
+                    
                     # Write zeros or provided data
                     if data is None:
                         # Write zeros
@@ -143,7 +153,6 @@ class CleanerService:
                             remaining -= write_size
                     else:
                         # Write provided data (repeat if needed)
-                        f.seek(0)
                         remaining = file_size
                         data_len = len(data)
                         while remaining > 0:
@@ -151,6 +160,9 @@ class CleanerService:
                             f.write(data[:write_size])
                             remaining -= write_size
 
+                    # Truncate file to original size (in case file grew)
+                    f.truncate(file_size)
+                    
                     # Flush to disk
                     f.flush()
                     os.fsync(f.fileno())  # Force write to disk
@@ -158,6 +170,7 @@ class CleanerService:
                 # On last pass, optionally write random data
                 if pass_num == passes - 1 and data is None:
                     with open(file_path, "r+b") as f:
+                        f.seek(0)  # Seek to beginning
                         remaining = file_size
                         buffer_size = self._settings.BUFFER_SIZE
                         while remaining > 0:
@@ -165,6 +178,7 @@ class CleanerService:
                             random_data = os.urandom(write_size)
                             f.write(random_data)
                             remaining -= write_size
+                        f.truncate(file_size)  # Ensure file size is correct
                         f.flush()
                         os.fsync(f.fileno())
 
