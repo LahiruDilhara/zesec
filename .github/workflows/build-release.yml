@@ -249,10 +249,9 @@ jobs:
         run: |
           mkdir -p release/all
           
-          # Copy all files to a single directory
-          cp -r release/linux/* release/all/ 2>/dev/null || true
-          cp -r release/windows/* release/all/ 2>/dev/null || true
-          cp -r release/macos/* release/all/ 2>/dev/null || true
+          # Copy only archives (tar.gz, zip, dmg) - these are the distributable formats
+          # Individual executables are already included in the archives
+          find release/linux release/windows release/macos -type f \( -name "*.tar.gz" -o -name "*.zip" -o -name "*.dmg" \) -exec cp {} release/all/ \;
           
           # Create a summary file
           cat > release/all/RELEASE_NOTES.txt << EOF
@@ -298,7 +297,7 @@ jobs:
             
             ---
             *Note: You can edit this release note after creation.*
-          files: release/all/**
+          files: release/all/*
           draft: false
           prerelease: ${{ contains(steps.version.outputs.version, 'alpha') || contains(steps.version.outputs.version, 'beta') || contains(steps.version.outputs.version, 'rc') }}
           generate_release_notes: true
