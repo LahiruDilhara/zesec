@@ -1,8 +1,5 @@
-"""Command loader for auto-discovering commands."""
+"""Command loader for loading commands."""
 
-import importlib
-import pkgutil
-from pathlib import Path
 from typing import Dict, Optional, Type
 
 from ...di.container import ApplicationContainer
@@ -10,37 +7,25 @@ from .base import BaseCommand, CommandRegistry
 
 
 def discover_commands(commands_package_path: str = "zesec.console.commands") -> None:
-    """Auto-discover and register all commands from a package.
+    """Load and register all commands by directly importing command modules.
     
-    This function imports all Python modules in the commands package,
-    which triggers the @CommandRegistry.register decorators.
+    This function directly imports all command modules, which triggers
+    the @CommandRegistry.register decorators.
     
     Args:
-        commands_package_path: Full path to commands package
+        commands_package_path: Full path to commands package (kept for compatibility)
     """
+    # Directly import all command modules
+    # This ensures they work in both normal Python and PyInstaller frozen executables
     try:
-        # Import the commands package
-        commands_package = importlib.import_module(commands_package_path)
-        package_path = Path(commands_package.__file__).parent
-        
-        # Find all Python files in the commands directory
-        for finder, name, ispkg in pkgutil.iter_modules([str(package_path)]):
-            # Skip packages and special files
-            if ispkg or name.startswith("_") or name == "__pycache__":
-                continue
-            
-            # Import the module (this triggers decorator registration)
-            module_name = f"{commands_package_path}.{name}"
-            try:
-                importlib.import_module(module_name)
-            except Exception as e:
-                # Log error but continue loading other commands
-                # In production, you might want to use proper logging
-                print(f"Warning: Failed to load command module {name}: {e}")
-                continue
-                
-    except Exception as e:
-        print(f"Error discovering commands: {e}")
+        from . import clean_command
+        from . import encrypt_command
+        from . import file_commands
+        from . import generate_key_command
+        from . import help_command
+        from . import system_commands
+    except ImportError as e:
+        print(f"Error importing command modules: {e}")
         raise
 
 

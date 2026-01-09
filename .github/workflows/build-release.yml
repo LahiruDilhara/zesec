@@ -286,3 +286,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+# pyinstaller zesec.spec --clean --noconfirm
