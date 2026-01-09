@@ -1,0 +1,288 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on tags starting with 'v' (validation happens in validate-tag job)
+  release:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v1.0.0)'
+        required: false
+        type: string
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  validate-tag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Validate tag format
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          # Validate exact pattern: v followed by three numbers separated by dots (e.g., v1.1.1, v2.3.4)
+          if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid tag format: $TAG_NAME"
+            echo "Tag must match exact semantic versioning pattern: v*.*.* (e.g., v1.1.1, v2.3.4)"
+            echo "Only tags like v1.1.1, v2.0.0, v10.20.30 are allowed"
+            exit 1
+          fi
+          echo "✅ Valid tag format: $TAG_NAME"
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+  build-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: [validate-tag]
+    if: always() && (needs.validate-tag.result == 'success' || needs.validate-tag.result == 'skipped' || github.event_name != 'push')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y upx-ucl
+      
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+      
+      - name: Build Linux executables
+        run: |
+          pyinstaller zesec.spec --clean --noconfirm
+          ls -lh dist/
+      
+      - name: Create archive for console
+        run: |
+          cd dist
+          tar -czf zesec-linux-console.tar.gz zesec
+          cd ..
+      
+      - name: Create archive for GUI
+        run: |
+          cd dist
+          tar -czf zesec-linux-gui.tar.gz zesec-gui
+          cd ..
+      
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-executables
+          path: |
+            dist/zesec
+            dist/zesec-gui
+            dist/zesec-linux-console.tar.gz
+            dist/zesec-linux-gui.tar.gz
+          retention-days: 30
+
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    needs: [validate-tag]
+    if: always() && (needs.validate-tag.result == 'success' || needs.validate-tag.result == 'skipped' || github.event_name != 'push')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+      
+      - name: Build Windows executables
+        run: |
+          pyinstaller zesec.spec --clean --noconfirm
+          dir dist
+      
+      - name: Create ZIP for console
+        run: |
+          Compress-Archive -Path dist\zesec.exe -DestinationPath dist\zesec-windows-console.zip -Force
+      
+      - name: Create ZIP for GUI
+        run: |
+          Compress-Archive -Path dist\zesec-gui.exe -DestinationPath dist\zesec-windows-gui.zip -Force
+      
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-executables
+          path: |
+            dist/zesec.exe
+            dist/zesec-gui.exe
+            dist/zesec-windows-console.zip
+            dist/zesec-windows-gui.zip
+          retention-days: 30  # Keep for 30 days for manual download
+
+  build-macos:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    needs: [validate-tag]
+    if: always() && (needs.validate-tag.result == 'success' || needs.validate-tag.result == 'skipped' || github.event_name != 'push')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+      
+      - name: Build macOS executables
+        run: |
+          pyinstaller zesec.spec --clean --noconfirm
+          ls -lh dist/
+      
+      - name: Create DMG for console (optional)
+        run: |
+          cd dist
+          hdiutil create -volname "Zesec Console" -srcfolder zesec -ov -format UDZO zesec-macos-console.dmg || true
+          cd ..
+      
+      - name: Create DMG for GUI
+        run: |
+          cd dist
+          if [ -d "zesec-gui.app" ]; then
+            hdiutil create -volname "Zesec GUI" -srcfolder zesec-gui.app -ov -format UDZO zesec-macos-gui.dmg || true
+          fi
+          cd ..
+      
+      - name: Create archive for console
+        run: |
+          cd dist
+          tar -czf zesec-macos-console.tar.gz zesec
+          cd ..
+      
+      - name: Create archive for GUI app
+        run: |
+          cd dist
+          if [ -d "zesec-gui.app" ]; then
+            tar -czf zesec-macos-gui.tar.gz zesec-gui.app
+          fi
+          cd ..
+      
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-executables
+          path: |
+            dist/zesec
+            dist/zesec-gui.app
+            dist/zesec-macos-console.tar.gz
+            dist/zesec-macos-gui.tar.gz
+            dist/*.dmg
+          retention-days: 30  # Keep for 30 days for manual download
+
+  create-release:
+    needs: [build-linux, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Only automatically attach to release if release was created via GitHub UI
+    # If triggered by tag push, artifacts will be available in Actions for manual download
+    if: github.event_name == 'release'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: linux-executables
+          path: release/linux
+      
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: windows-executables
+          path: release/windows
+      
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: macos-executables
+          path: release/macos
+      
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          elif [ "${{ github.event_name }}" == "push" ]; then
+            # Extract tag name from ref (refs/tags/v1.0.0 -> v1.0.0)
+            VERSION="${GITHUB_REF#refs/tags/}"
+          else
+            VERSION="dev-$(date +%Y%m%d-%H%M%S)"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building release: $VERSION"
+      
+      - name: Prepare release files
+        run: |
+          mkdir -p release/all
+          
+          # Copy all files to a single directory
+          cp -r release/linux/* release/all/ 2>/dev/null || true
+          cp -r release/windows/* release/all/ 2>/dev/null || true
+          cp -r release/macos/* release/all/ 2>/dev/null || true
+          
+          # Create a summary file
+          cat > release/all/RELEASE_NOTES.txt << EOF
+          Zesec Release ${{ steps.version.outputs.version }}
+          
+          This release contains executables for:
+          - Linux (x86_64)
+          - Windows (x86_64)
+          - macOS (x86_64/ARM64)
+          
+          Files included:
+          - Console executables (zesec / zesec.exe)
+          - GUI executables (zesec-gui / zesec-gui.exe / zesec-gui.app)
+          - Compressed archives for each platform
+          
+          Installation:
+          - Linux: Extract tar.gz and run ./zesec or ./zesec-gui
+          - Windows: Extract zip and run zesec.exe or zesec-gui.exe
+          - macOS: Extract tar.gz or mount DMG and run the application
+          
+          For more information, visit: https://github.com/${{ github.repository }}
+          EOF
+          
+          ls -lh release/all/
+      
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release/all/**
+          draft: false
+          prerelease: ${{ contains(github.event.release.tag_name, 'alpha') || contains(github.event.release.tag_name, 'beta') || contains(github.event.release.tag_name, 'rc') }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
