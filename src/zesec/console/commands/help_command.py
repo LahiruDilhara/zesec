@@ -3,7 +3,7 @@
 from typing import Optional
 
 from rich.console import Console
-from rich.panel import Panel
+from rich.table import Table
 
 from .base import BaseCommand
 
@@ -42,32 +42,44 @@ class HelpCommand(BaseCommand):
 
     def _show_general_help(self) -> None:
         """Show general help information."""
-        help_text = """
-        [bold cyan]Available Commands:[/bold cyan]
+        # Create a table for better alignment
+        table = Table(show_header=False, box=None, padding=(0, 2))
+        table.add_column("Command", style="cyan", width=20)
+        table.add_column("Description", style="white")
         
-        [bold]File Operations:[/bold]
-          ls [path]              - List files and directories
-          cat <file>             - Display file contents
-          pwd                     - Print current working directory
-          cd [path]               - Change directory
+        # File Operations
+        table.add_row("[bold]File Operations:[/bold]", "")
+        table.add_row("  ls [path]", "List files and directories")
+        table.add_row("  cat <file>", "Display file contents")
+        table.add_row("  pwd", "Print current working directory")
+        table.add_row("  cd [path]", "Change directory")
+        table.add_row("", "")  # Empty row for spacing
         
-        [bold]Encryption:[/bold]
-          encrypt <file>         - Encrypt a file
-          decrypt <file>         - Decrypt a file
-          generate-key <path>    - Generate encryption key file
+        # Encryption
+        table.add_row("[bold]Encryption:[/bold]", "")
+        table.add_row("  encrypt <file>", "Encrypt a file")
+        table.add_row("  decrypt <file>", "Decrypt a file")
+        table.add_row("  generate-key <path>", "Generate encryption key file")
+        table.add_row("", "")  # Empty row for spacing
         
-        [bold]Cleaning:[/bold]
-          clean <file>           - Securely clean a file
-          clean-dir <dir>        - Securely clean directory
+        # Cleaning
+        table.add_row("[bold]Cleaning:[/bold]", "")
+        table.add_row("  clean <file>", "Securely clean a file")
+        table.add_row("  clean-dir <dir>", "Securely clean directory")
+        table.add_row("", "")  # Empty row for spacing
         
-        [bold]System:[/bold]
-          help [command]         - Show help (this message)
-          exit, quit             - Exit the application
-          clear                   - Clear the screen
+        # System
+        table.add_row("[bold]System:[/bold]", "")
+        table.add_row("  help [command]", "Show help (this message)")
+        table.add_row("  exit, quit", "Exit the application")
+        table.add_row("  clear", "Clear the screen")
         
-        Type 'help <command>' for detailed information about a specific command.
-        """
-        console.print(Panel(help_text, title="Zesec Help", border_style="cyan"))
+        # Print the help content directly without a box
+        console.print("[bold cyan]Available Commands:[/bold cyan]")
+        console.print()
+        console.print(table)
+        console.print()
+        console.print("[dim]Type 'help <command>' for detailed information about a specific command.[/dim]")
 
     def _show_command_help(self, command_name: str) -> None:
         """Show help for a specific command.
@@ -79,7 +91,7 @@ class HelpCommand(BaseCommand):
             command = self._commands_registry.get(command_name)
             if command:
                 help_text = command.get_help()
-                console.print(Panel(help_text, title=f"Help: {command_name}", border_style="cyan"))
+                console.print(help_text)
                 return
         
         console.print(f"[red]Unknown command: {command_name}[/red]")

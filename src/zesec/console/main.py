@@ -8,7 +8,6 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.history import FileHistory
 from rich.console import Console
-from rich.panel import Panel
 
 from ..config.settings import Settings
 from ..utils.logging_config import get_logger, setup_logging
@@ -21,13 +20,15 @@ rich_console = Console()
 
 def print_banner() -> None:
     """Print application banner."""
-    banner = """
-    ╔═══════════════════════════════════════════╗
-    ║         ZESEC - Secure File Manager       ║
-    ║     Encryption & Secure File Cleaning      ║
-    ╚═══════════════════════════════════════════╝
-    """
-    rich_console.print(Panel(banner, style="bold cyan"))
+    # Box width: 41 chars total (╔ + 39 ═ + ╗)
+    # Inside space: 39 chars (between ║ characters)
+    # Text 1: "ZESEC - Secure File Manager" = 29 chars -> 5 spaces each side
+    # Text 2: "Encryption & Secure File Cleaning" = 33 chars -> 3 spaces each side
+    banner = """╔═══════════════════════════════════════════╗
+║     ZESEC - Secure File Manager           ║
+║   Encryption & Secure File Cleaning       ║
+╚═══════════════════════════════════════════╝"""
+    rich_console.print(f"[bold cyan]{banner}[/bold cyan]")
 
 
 def print_help() -> None:
@@ -57,7 +58,7 @@ def print_help() -> None:
     
     Type 'help <command>' for detailed command information.
     """
-    rich_console.print(Panel(help_text, title="Help", border_style="cyan"))
+    rich_console.print(help_text)
 
 
 def main() -> int:
