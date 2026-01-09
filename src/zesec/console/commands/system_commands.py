@@ -5,11 +5,17 @@ from typing import Optional
 
 from rich.console import Console
 
-from .base import BaseCommand
+from .base import BaseCommand, CommandRegistry
 
 console = Console()
 
 
+@CommandRegistry.register(
+    name="exit",
+    description="Exit the application",
+    category="System",
+    aliases=["quit"]
+)
 class ExitCommand(BaseCommand):
     """Exit application command."""
 
@@ -37,6 +43,11 @@ class ExitCommand(BaseCommand):
         """
 
 
+@CommandRegistry.register(
+    name="clear",
+    description="Clear the screen",
+    category="System"
+)
 class ClearCommand(BaseCommand):
     """Clear screen command."""
 

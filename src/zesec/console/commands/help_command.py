@@ -5,11 +5,16 @@ from typing import Optional
 from rich.console import Console
 from rich.table import Table
 
-from .base import BaseCommand
+from .base import BaseCommand, CommandRegistry
 
 console = Console()
 
 
+@CommandRegistry.register(
+    name="help",
+    description="Show help information",
+    category="System"
+)
 class HelpCommand(BaseCommand):
     """Help command."""
 
@@ -42,37 +47,41 @@ class HelpCommand(BaseCommand):
 
     def _show_general_help(self) -> None:
         """Show general help information."""
+        # Get commands from registry
+        all_commands = CommandRegistry.get_all_commands()
+        
+        # Group commands by category
+        commands_by_category: dict[str, list[dict]] = {}
+        
+        for name, info in all_commands.items():
+            # Skip aliases (they point to the same command)
+            if name in info.get("aliases", []):
+                continue
+            
+            category = info.get("category", "System")
+            if category not in commands_by_category:
+                commands_by_category[category] = []
+            
+            commands_by_category[category].append({
+                "name": name,
+                "description": info.get("description", ""),
+                "aliases": info.get("aliases", [])
+            })
+        
         # Create a table for better alignment
         table = Table(show_header=False, box=None, padding=(0, 2))
         table.add_column("Command", style="cyan", width=20)
         table.add_column("Description", style="white")
         
-        # File Operations
-        table.add_row("[bold]File Operations:[/bold]", "")
-        table.add_row("  ls [path]", "List files and directories")
-        table.add_row("  cat <file>", "Display file contents")
-        table.add_row("  pwd", "Print current working directory")
-        table.add_row("  cd [path]", "Change directory")
-        table.add_row("", "")  # Empty row for spacing
-        
-        # Encryption
-        table.add_row("[bold]Encryption:[/bold]", "")
-        table.add_row("  encrypt <file>", "Encrypt a file")
-        table.add_row("  decrypt <file>", "Decrypt a file")
-        table.add_row("  generate-key <path>", "Generate encryption key file")
-        table.add_row("", "")  # Empty row for spacing
-        
-        # Cleaning
-        table.add_row("[bold]Cleaning:[/bold]", "")
-        table.add_row("  clean <file>", "Securely clean a file")
-        table.add_row("  clean-dir <dir>", "Securely clean directory")
-        table.add_row("", "")  # Empty row for spacing
-        
-        # System
-        table.add_row("[bold]System:[/bold]", "")
-        table.add_row("  help [command]", "Show help (this message)")
-        table.add_row("  exit, quit", "Exit the application")
-        table.add_row("  clear", "Clear the screen")
+        # Add commands grouped by category
+        for category in sorted(commands_by_category.keys()):
+            table.add_row(f"[bold]{category}:[/bold]", "")
+            for cmd_info in sorted(commands_by_category[category], key=lambda x: x["name"]):
+                name = cmd_info["name"]
+                if cmd_info["aliases"]:
+                    name += f", {', '.join(cmd_info['aliases'])}"
+                table.add_row(f"  {name}", cmd_info["description"])
+            table.add_row("", "")  # Empty row for spacing
         
         # Print the help content directly without a box
         console.print("[bold cyan]Available Commands:[/bold cyan]")

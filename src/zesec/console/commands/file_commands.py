@@ -9,11 +9,16 @@ from rich.table import Table
 from rich.tree import Tree
 
 from ...utils.platform import get_platform
-from .base import BaseCommand
+from .base import BaseCommand, CommandRegistry
 
 console = Console()
 
 
+@CommandRegistry.register(
+    name="ls",
+    description="List files and directories",
+    category="File Operations"
+)
 class LsCommand(BaseCommand):
     """List files and directories command."""
 
@@ -125,6 +130,11 @@ class LsCommand(BaseCommand):
         """
 
 
+@CommandRegistry.register(
+    name="cat",
+    description="Display file contents",
+    category="File Operations"
+)
 class CatCommand(BaseCommand):
     """Display file contents command."""
 
@@ -197,6 +207,11 @@ class CatCommand(BaseCommand):
         """
 
 
+@CommandRegistry.register(
+    name="pwd",
+    description="Print current working directory",
+    category="File Operations"
+)
 class PwdCommand(BaseCommand):
     """Print current working directory command."""
 
@@ -229,6 +244,11 @@ class PwdCommand(BaseCommand):
         """
 
 
+@CommandRegistry.register(
+    name="cd",
+    description="Change directory",
+    category="File Operations"
+)
 class CdCommand(BaseCommand):
     """Change directory command."""
 

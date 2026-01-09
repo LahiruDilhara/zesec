@@ -7,11 +7,17 @@ from rich.console import Console
 
 from ...core.encryption import KeyManager
 from ...core.file_operations import FileHandler
-from .base import BaseCommand
+from .base import BaseCommand, CommandRegistry
 
 console = Console()
 
 
+@CommandRegistry.register(
+    name="generate-key",
+    description="Generate encryption key file",
+    category="Encryption",
+    requires_container=True
+)
 class GenerateKeyCommand(BaseCommand):
     """Generate encryption key file command."""
 

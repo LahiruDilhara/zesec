@@ -6,11 +6,23 @@ from typing import Optional
 from rich.console import Console
 from rich.prompt import Confirm
 
-from .base import BaseCommand
+from .base import BaseCommand, CommandRegistry
 
 console = Console()
 
 
+# Factory function for clean-dir command
+def _create_clean_dir_command(container):
+    """Factory function to create clean-dir command."""
+    return CleanCommand(container, is_directory=True)
+
+
+@CommandRegistry.register(
+    name="clean",
+    description="Securely clean a file",
+    category="Cleaning",
+    requires_container=True
+)
 class CleanCommand(BaseCommand):
     """Secure file cleaning command."""
 
@@ -118,4 +130,16 @@ class CleanCommand(BaseCommand):
               clean document.txt
               clean /path/to/file.txt
             """
+
+
+@CommandRegistry.register(
+    name="clean-dir",
+    description="Securely clean directory",
+    category="Cleaning",
+    requires_container=True,
+    factory=_create_clean_dir_command
+)
+class CleanDirCommand(CleanCommand):
+    """This class exists only for registration - not actually used."""
+    pass
 

@@ -6,18 +6,8 @@ from typing import Optional
 from rich.console import Console
 
 from ..di.container import ApplicationContainer
-from .commands.base import BaseCommand
-from .commands.clean_command import CleanCommand
-from .commands.encrypt_command import DecryptCommand, EncryptCommand
-from .commands.file_commands import (
-    CatCommand,
-    CdCommand,
-    LsCommand,
-    PwdCommand,
-)
-from .commands.generate_key_command import GenerateKeyCommand
-from .commands.help_command import HelpCommand
-from .commands.system_commands import ClearCommand, ExitCommand
+from .commands.base import BaseCommand, CommandRegistry
+from .commands.loader import discover_commands, create_command_instance
 
 console = Console()
 
@@ -33,32 +23,50 @@ class CommandParser:
         """
         self._container = container or ApplicationContainer()
         
-        # Register all commands
-        # Note: HelpCommand needs commands registry, so we create it after
-        self._commands: dict[str, BaseCommand] = {
-            # File operations
-            "ls": LsCommand(),
-            "cat": CatCommand(),
-            "pwd": PwdCommand(),
-            "cd": CdCommand(),
-            
-            # Encryption
-            "encrypt": EncryptCommand(self._container),
-            "decrypt": DecryptCommand(self._container),
-            "generate-key": GenerateKeyCommand(self._container),
-            
-            # Cleaning
-            "clean": CleanCommand(self._container),
-            "clean-dir": CleanCommand(self._container, is_directory=True),
-            
-            # System
-            "exit": ExitCommand(),
-            "quit": ExitCommand(),
-            "clear": ClearCommand(),
-        }
+        # Auto-discover all commands
+        discover_commands()
         
-        # Create HelpCommand with commands registry to avoid circular import
-        self._commands["help"] = HelpCommand(commands_registry=self._commands)
+        # Build command instances from registry
+        self._commands: dict[str, BaseCommand] = {}
+        all_commands = CommandRegistry.get_all_commands()
+        
+        # Track which command classes we've already instantiated
+        # (to avoid creating multiple instances for aliases)
+        instantiated_classes = {}
+        processed_names = set()
+        
+        for name, info in all_commands.items():
+            # Skip if we've already processed this command (could be an alias entry)
+            if name in processed_names:
+                continue
+            
+            command_class = info["class"]
+            
+            # If we've already instantiated this class, reuse the instance
+            if command_class in instantiated_classes:
+                instance = instantiated_classes[command_class]
+            else:
+                # Create new instance
+                instance = create_command_instance(name, self._container)
+                if instance:
+                    instantiated_classes[command_class] = instance
+                else:
+                    continue
+            
+            # Register this name and all its aliases
+            self._commands[name] = instance
+            processed_names.add(name)
+            
+            for alias in info.get("aliases", []):
+                self._commands[alias] = instance
+                processed_names.add(alias)
+        
+        # Special case: HelpCommand needs the registry after all commands are loaded
+        # Re-instantiate it with the commands registry
+        if "help" in self._commands:
+            from .commands.help_command import HelpCommand
+            help_instance = HelpCommand(commands_registry=self._commands)
+            self._commands["help"] = help_instance
 
     def parse_and_execute(self, user_input: str) -> Optional[str]:
         """Parse user input and execute command.

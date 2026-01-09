@@ -7,11 +7,17 @@ from rich.console import Console
 from rich.prompt import Prompt
 
 from ...interfaces.encryptor_interface import IEncryptor
-from .base import BaseCommand
+from .base import BaseCommand, CommandRegistry
 
 console = Console()
 
 
+@CommandRegistry.register(
+    name="encrypt",
+    description="Encrypt a file",
+    category="Encryption",
+    requires_container=True
+)
 class EncryptCommand(BaseCommand):
     """Encrypt file command."""
 
@@ -114,6 +120,12 @@ class EncryptCommand(BaseCommand):
         """
 
 
+@CommandRegistry.register(
+    name="decrypt",
+    description="Decrypt a file",
+    category="Encryption",
+    requires_container=True
+)
 class DecryptCommand(BaseCommand):
     """Decrypt file command."""
 
@@ -204,7 +216,7 @@ class DecryptCommand(BaseCommand):
           --key-file <path> Key file path (required if used during encryption)
         
         Examples:
-          decrypt document.txt.enc
-          decrypt document.txt.enc --key-file mykey.key
+          decrypt document.txt.zesec
+          decrypt document.txt.zesec --key-file mykey.key
         """
 

@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
 
     # File extensions
-    ENCRYPTED_EXTENSION: str = ".enc"
+    ENCRYPTED_EXTENSION: str = ".zesec"
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -85,9 +85,9 @@ class Settings(BaseSettings):
             Path with encrypted extension removed
         """
         if encrypted_path.suffix == self.ENCRYPTED_EXTENSION:
-            # Remove .enc extension
+            # Remove encrypted extension
             return encrypted_path.with_suffix("")
-        # If no .enc extension, try removing it from the end
+        # If no encrypted extension, try removing it from the end
         name = encrypted_path.name
         if name.endswith(self.ENCRYPTED_EXTENSION):
             new_name = name[: -len(self.ENCRYPTED_EXTENSION)]

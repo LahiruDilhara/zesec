@@ -80,7 +80,7 @@ class EncryptorService:
         Args:
             file_path: Path to the file to encrypt
             password: Password for encryption
-            output_path: Optional output path. If None, uses file_path with .enc extension
+            output_path: Optional output path. If None, uses file_path with .zesec extension
             clean_original: If True, securely clean original file after encryption
             key_file_path: Optional path to key file. If provided, combines with password
             
@@ -163,7 +163,7 @@ class EncryptorService:
         Args:
             file_path: Path to the encrypted file
             password: Password used for encryption
-            output_path: Optional output path. If None, removes .enc extension
+            output_path: Optional output path. If None, removes .zesec extension
             key_file_path: Optional path to key file. Required if used during encryption
             
         Returns:
