@@ -14,15 +14,22 @@ project_root = Path(SPECPATH).parent
 icon_path = project_root / "img" / "icon.png"
 
 # Convert icon path based on platform
-if sys.platform == 'win32':
-    # Windows needs .ico format - PyInstaller will handle PNG if .ico not found
-    icon_file = str(icon_path.with_suffix('.ico')) if (project_root / "img" / "icon.ico").exists() else str(icon_path)
-elif sys.platform == 'darwin':
-    # macOS needs .icns format - PyInstaller will handle PNG if .icns not found
-    icon_file = str(icon_path.with_suffix('.icns')) if (project_root / "img" / "icon.icns").exists() else str(icon_path)
+# Use icon only if it exists, otherwise PyInstaller will skip it
+if icon_path.exists():
+    if sys.platform == 'win32':
+        # Windows prefers .ico format - PyInstaller will handle PNG if .ico not found
+        icon_ico = project_root / "img" / "icon.ico"
+        icon_file = str(icon_ico) if icon_ico.exists() else str(icon_path)
+    elif sys.platform == 'darwin':
+        # macOS prefers .icns format - PyInstaller will handle PNG if .icns not found
+        icon_icns = project_root / "img" / "icon.icns"
+        icon_file = str(icon_icns) if icon_icns.exists() else str(icon_path)
+    else:
+        # Linux can use PNG directly
+        icon_file = str(icon_path)
 else:
-    # Linux can use PNG directly
-    icon_file = str(icon_path)
+    # No icon file found - PyInstaller will use default
+    icon_file = None
 
 # Hidden imports needed by the application
 hidden_imports = [
@@ -97,10 +104,10 @@ hidden_imports = [
     'dependency_injector.providers',
 ]
 
-# Collect all data files - include the src directory
-datas = [
-    (str(project_root / "src" / "zesec"), "zesec"),
-]
+# Collect all data files
+# Note: We don't need to include the source directory as data files
+# PyInstaller will automatically bundle Python modules from the pathex
+datas = []
 
 # Analysis for console executable
 a_console = Analysis(
@@ -160,7 +167,7 @@ exe_console = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=icon_file if sys.platform != 'darwin' else None,  # macOS handles icon differently
+    icon=icon_file,  # None if icon not found
 )
 
 # GUI executable
@@ -184,7 +191,7 @@ exe_gui = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=icon_file if sys.platform != 'darwin' else None,  # macOS handles icon differently
+    icon=icon_file,  # None if icon not found
 )
 
 # macOS app bundle (only on macOS)
