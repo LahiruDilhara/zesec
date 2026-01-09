@@ -204,9 +204,8 @@ jobs:
     needs: [build-linux, build-windows, build-macos]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Only automatically attach to release if release was created via GitHub UI
-    # If triggered by tag push, artifacts will be available in Actions for manual download
-    if: github.event_name == 'release'
+    # Create release automatically on tag push or attach to manually created release
+    if: always() && (needs.build-linux.result == 'success' && needs.build-windows.result == 'success' && needs.build-macos.result == 'success')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -241,6 +240,7 @@ jobs:
             VERSION="dev-$(date +%Y%m%d-%H%M%S)"
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag_name=$VERSION" >> $GITHUB_OUTPUT
           echo "Building release: $VERSION"
       
       - name: Prepare release files
@@ -279,10 +279,28 @@ jobs:
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ steps.version.outputs.tag_name }}
+          name: Release ${{ steps.version.outputs.version }}
+          body: |
+            ## Zesec ${{ steps.version.outputs.version }}
+            
+            This release contains executables for Linux, Windows, and macOS.
+            
+            ### Downloads
+            - **Linux**: Extract tar.gz and run `./zesec` or `./zesec-gui`
+            - **Windows**: Extract zip and run `zesec.exe` or `zesec-gui.exe`
+            - **macOS**: Extract tar.gz or mount DMG and run the application
+            
+            ### What's Changed
+            *See the full changelog in the repository*
+            
+            ---
+            *Note: You can edit this release note after creation.*
           files: release/all/**
           draft: false
-          prerelease: ${{ contains(github.event.release.tag_name, 'alpha') || contains(github.event.release.tag_name, 'beta') || contains(github.event.release.tag_name, 'rc') }}
+          prerelease: ${{ contains(steps.version.outputs.version, 'alpha') || contains(steps.version.outputs.version, 'beta') || contains(steps.version.outputs.version, 'rc') }}
           generate_release_notes: true
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
