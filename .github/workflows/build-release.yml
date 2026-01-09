@@ -206,6 +206,8 @@ jobs:
     timeout-minutes: 10
     # Create release automatically on tag push or attach to manually created release
     if: always() && (needs.build-linux.result == 'success' && needs.build-windows.result == 'success' && needs.build-macos.result == 'success')
+    permissions:
+      contents: write  # Required to create releases and upload assets
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -300,8 +302,5 @@ jobs:
           draft: false
           prerelease: ${{ contains(steps.version.outputs.version, 'alpha') || contains(steps.version.outputs.version, 'beta') || contains(steps.version.outputs.version, 'rc') }}
           generate_release_notes: true
-          make_latest: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 # pyinstaller zesec.spec --clean --noconfirm
