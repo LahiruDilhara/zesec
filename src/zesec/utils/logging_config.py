@@ -1,8 +1,6 @@
 """Centralized logging configuration."""
 
 import sys
-from pathlib import Path
-from typing import Optional
 
 from loguru import logger
 
@@ -13,8 +11,11 @@ def setup_logging() -> None:
     """Configure logging once at application startup.
     
     This function should be called once at the beginning of the application.
-    It configures both console and file logging based on settings.
+    It configures console logging only (no file logging).
     Colors: INFO=green, WARNING=yellow, ERROR=red
+    
+    On Windows GUI apps (PyInstaller), sys.stderr may be None, so we
+    check for availability before adding the handler.
     """
     settings = Settings.get_instance()
 
@@ -68,27 +69,19 @@ def setup_logging() -> None:
         
         return formatted + "\n"
 
-    # Console handler with colorization
-    logger.add(
-        sys.stderr,
-        format=format_console,
-        level=settings.LOG_LEVEL,
-        colorize=True,
-    )
-
-    # File handler (if configured) - no colors in file
-    log_file = settings.get_log_file_path()
-    if log_file:
-        log_file.parent.mkdir(parents=True, exist_ok=True)
-        logger.add(
-            log_file,
-            format=settings.LOG_FORMAT,
-            level=settings.LOG_LEVEL,
-            rotation="10 MB",
-            retention="7 days",
-            compression="zip",
-            colorize=False,  # No colors in file
-        )
+    # Console handler with colorization (only if stderr is available)
+    # On Windows GUI apps, sys.stderr may be None
+    if sys.stderr is not None and hasattr(sys.stderr, 'write'):
+        try:
+            logger.add(
+                sys.stderr,
+                format=format_console,
+                level=settings.LOG_LEVEL,
+                colorize=True,
+            )
+        except (AttributeError, OSError):
+            # stderr exists but may not be writable (e.g., in some GUI contexts)
+            pass
 
 
 def get_logger(name: str):

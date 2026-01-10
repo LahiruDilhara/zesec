@@ -47,6 +47,11 @@ def main() -> int:
         
     except Exception as e:
         logger.error(f"Fatal error in GUI: {e}")
-        print(f"Fatal error: {e}", file=sys.stderr)
+        # Try to print to stderr as fallback (may not be available on Windows GUI apps)
+        if sys.stderr is not None:
+            try:
+                print(f"Fatal error: {e}", file=sys.stderr)
+            except (AttributeError, OSError):
+                pass  # stderr not available or not writable
         return 1
 
