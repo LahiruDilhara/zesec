@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QFormLayout, QLineEdit
 )
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QShortcut, QKeySequence
 
 from ...di.container import ApplicationContainer
 from ...core.models.encryption_result import EncryptionResult
@@ -101,7 +102,12 @@ class MainWindow(QMainWindow):
     def _init_ui(self):
         """Initialize UI components."""
         self.setWindowTitle("Zesec - Secure File Manager")
+        self.resize(900, 750)
         self.setMinimumSize(700, 600)
+        
+        # Ctrl+W shortcut to close
+        self._close_shortcut = QShortcut(QKeySequence("Ctrl+W"), self)
+        self._close_shortcut.activated.connect(self.close)
         
         # Central widget
         central_widget = QWidget()
@@ -142,7 +148,7 @@ class MainWindow(QMainWindow):
         self._encrypt_file_selector = MultiFileSelectorWidget()
         file_layout.addWidget(self._encrypt_file_selector)
         file_group.setLayout(file_layout)
-        layout.addWidget(file_group)
+        layout.addWidget(file_group, 1)  # Stretch factor 1 allows it to expand
         
         # Password input
         self._encrypt_password = PasswordInputWidget(label="Password:")
@@ -201,7 +207,7 @@ class MainWindow(QMainWindow):
         self._decrypt_file_selector = MultiFileSelectorWidget(file_filter="Encrypted Files (*.zesec);;All Files (*)")
         file_layout.addWidget(self._decrypt_file_selector)
         file_group.setLayout(file_layout)
-        layout.addWidget(file_group)
+        layout.addWidget(file_group, 1)  # Stretch factor 1 allows it to expand
         
         # Password input
         self._decrypt_password = PasswordInputWidget(label="Password:")

@@ -1,10 +1,11 @@
 """GUI application entry point."""
 
 import sys
+import signal
 from pathlib import Path
 
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 
 from ..config.settings import Settings
 from ..utils.logging_config import get_logger, setup_logging
@@ -21,6 +22,9 @@ def main() -> int:
     # Setup logging
     setup_logging()
     logger = get_logger(__name__)
+    
+    # Handle Ctrl+C properly in terminal
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
     
     # Load settings
     settings = Settings.get_instance()

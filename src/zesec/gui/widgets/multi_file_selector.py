@@ -47,7 +47,7 @@ class MultiFileSelectorWidget(QWidget):
         
         # Stacked widget to switch between "No files" and the list
         self._stack = QStackedWidget()
-        self._stack.setFixedHeight(120)  # Specific height requested
+        self._stack.setMinimumHeight(150)  # Expandable
         
         # Page 0: No files label
         self._empty_label = QLabel("No files added")

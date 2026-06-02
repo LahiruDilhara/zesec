@@ -109,18 +109,19 @@ QCheckBox {
 QCheckBox::indicator, QListView::indicator {
     width: 18px;
     height: 18px;
-    border: 1px solid #ced4da;
+    border: 2px solid #adb5bd;
     border-radius: 4px;
     background-color: #ffffff;
+    margin-right: 4px;
 }
 
 QCheckBox::indicator:hover, QListView::indicator:hover {
-    border: 1px solid #3498db;
+    border: 2px solid #3498db;
 }
 
 QCheckBox::indicator:checked, QListView::indicator:checked {
     background-color: #3498db;
-    border: 1px solid #3498db;
+    border: 2px solid #3498db;
     image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBvbHlsaW5lIHBvaW50cz0iMjAgNiA5IDE3IDQgMTIiLz48L3N2Zz4=);
 }
 
