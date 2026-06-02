@@ -1,5 +1,7 @@
 """Multi-file selector widget."""
 
+import os
+import sys
 from pathlib import Path
 from typing import List
 
@@ -24,7 +26,9 @@ class FileItemWidget(QWidget):
         
     def _get_svg_path(self, filename: str) -> str:
         """Get the absolute path to an SVG asset."""
-        if getattr(sys, 'frozen', False):
+        if "ZESEC_ROOT" in os.environ:
+            base_dir = Path(os.environ["ZESEC_ROOT"])
+        elif getattr(sys, 'frozen', False):
             base_dir = Path(sys._MEIPASS)
         else:
             base_dir = Path(__file__).parent.parent.parent.parent.parent

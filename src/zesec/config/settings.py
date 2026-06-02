@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     ENCRYPTED_EXTENSION: str = ".zesec"
 
     model_config = SettingsConfigDict(
-        env_file=".env" if not getattr(sys, 'frozen', False) else None,
+        env_file=".env" if not (getattr(sys, 'frozen', False) or "__compiled__" in globals()) else None,
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",  # Ignore extra env vars

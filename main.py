@@ -5,6 +5,7 @@ Main entry point for the application.
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -12,9 +13,13 @@ from pathlib import Path
 project_root = Path(__file__).parent.resolve()
 src_path = project_root / "src"
 
+# Set ZESEC_ROOT so all modules know where the data files are
+os.environ["ZESEC_ROOT"] = str(project_root)
+
 # Add src to Python path so 'zesec' package can be imported
-if str(src_path) not in sys.path:
-    sys.path.insert(0, str(src_path))
+if not (getattr(sys, 'frozen', False) or "__compiled__" in globals()):
+    if str(src_path) not in sys.path:
+        sys.path.insert(0, str(src_path))
 
 # Now import from zesec package
 try:
@@ -56,3 +61,5 @@ def main() -> int:
 if __name__ == "__main__":
     sys.exit(main())
 
+import os
+print("ZESEC_ROOT:", os.environ.get("ZESEC_ROOT"))

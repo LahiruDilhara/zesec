@@ -141,3 +141,6 @@ dmypy.json
 *.msi
 *.zip
 *.tar.gz
+main.dist/
+main.build/
+main.onefile-build/

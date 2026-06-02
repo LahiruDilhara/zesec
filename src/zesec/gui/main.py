@@ -1,6 +1,7 @@
 """GUI application entry point."""
 
 import sys
+import os
 import signal
 from pathlib import Path
 
@@ -42,9 +43,13 @@ def main() -> int:
                 stylesheet = f.read()
                 
             # Fix SVG paths to be absolute for QSS
-            if getattr(sys, 'frozen', False):
+            if "ZESEC_ROOT" in os.environ:
+                base_dir = Path(os.environ["ZESEC_ROOT"])
+            elif getattr(sys, 'frozen', False):
+                # PyInstaller fallback
                 base_dir = Path(sys._MEIPASS)
             else:
+                # Source mode fallback
                 base_dir = Path(__file__).parent.parent.parent.parent
                 
             base_dir_str = base_dir.as_posix()
