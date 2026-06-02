@@ -30,6 +30,15 @@ def main() -> int:
     app.setApplicationName("Zesec")
     app.setOrganizationName("Zesec")
     
+    # Load and apply modern dark theme QSS
+    style_path = Path(__file__).parent / "style.qss"
+    if style_path.exists():
+        try:
+            with open(style_path, "r", encoding="utf-8") as f:
+                app.setStyleSheet(f.read())
+        except Exception as e:
+            logger.warning(f"Failed to load stylesheet: {e}")
+    
     # Enable high DPI scaling
     app.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     app.setAttribute(Qt.AA_UseHighDpiPixmaps, True)

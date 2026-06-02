@@ -141,6 +141,9 @@ class MainWindow(QMainWindow):
         self._encrypt_password = PasswordInputWidget(label="Password:")
         layout.addWidget(self._encrypt_password)
         
+        self._encrypt_password_confirm = PasswordInputWidget(label="Confirm Password:")
+        layout.addWidget(self._encrypt_password_confirm)
+        
         # Key file selection (optional)
         key_group = QGroupBox("Key File (Optional)")
         key_layout = QVBoxLayout()
@@ -326,6 +329,11 @@ class MainWindow(QMainWindow):
             self._show_error("Validation Error", "Please enter a password.")
             return
             
+        password_confirm = self._encrypt_password_confirm.get_password()
+        if password != password_confirm:
+            self._show_error("Validation Error", "Passwords do not match.")
+            return
+            
         key_file_path = self._encrypt_key_file_selector.get_path()
         clean_original = self._encrypt_clean_original.isChecked()
         
@@ -443,6 +451,7 @@ class MainWindow(QMainWindow):
             # Clear form
             self._encrypt_file_selector.clear()
             self._encrypt_password.clear()
+            self._encrypt_password_confirm.clear()
             self._encrypt_key_file_selector.clear()
         else:
             QMessageBox.critical(
