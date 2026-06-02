@@ -1,5 +1,6 @@
 """Secure password input widget."""
 
+# pyrefly: ignore [missing-import]
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QLineEdit, QLabel, QCheckBox
 )

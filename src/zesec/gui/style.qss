@@ -79,24 +79,7 @@ QPushButton:disabled {
     color: #a0a0a0;
 }
 
-/* Special styling for destructive buttons (like Clean File) */
-QPushButton[text="Clean File"] {
-    background-color: #e74c3c;
-    color: #ffffff;
-}
 
-QPushButton[text="Clean File"]:hover {
-    background-color: #c0392b;
-}
-
-QPushButton[text="Clean File"]:pressed {
-    background-color: #922b21;
-}
-
-QPushButton[text="Clean File"]:disabled {
-    background-color: #f5b7b1;
-    color: #ffffff;
-}
 
 /* Line Edits (Inputs) */
 QLineEdit {
@@ -123,7 +106,7 @@ QCheckBox {
     spacing: 8px;
 }
 
-QCheckBox::indicator {
+QCheckBox::indicator, QListView::indicator {
     width: 18px;
     height: 18px;
     border: 1px solid #ced4da;
@@ -131,14 +114,37 @@ QCheckBox::indicator {
     background-color: #ffffff;
 }
 
-QCheckBox::indicator:hover {
+QCheckBox::indicator:hover, QListView::indicator:hover {
     border: 1px solid #3498db;
 }
 
-QCheckBox::indicator:checked {
+QCheckBox::indicator:checked, QListView::indicator:checked {
     background-color: #3498db;
     border: 1px solid #3498db;
     image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBvbHlsaW5lIHBvaW50cz0iMjAgNiA5IDE3IDQgMTIiLz48L3N2Zz4=);
+}
+
+/* List Views (File Selector) */
+QListView {
+    background-color: #ffffff;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    outline: none;
+}
+
+QListView::item {
+    padding: 8px;
+    border-bottom: 1px solid #f1f3f5;
+    color: #333333;
+}
+
+QListView::item:hover {
+    background-color: #f8f9fa;
+}
+
+QListView::item:selected {
+    background-color: #e9ecef;
+    color: #333333;
 }
 
 /* Progress Bars */
@@ -165,6 +171,7 @@ QScrollBar:vertical {
     background: #f8f9fa;
     width: 10px;
     margin: 0;
+    border-radius: 5px;
 }
 
 QScrollBar::handle:vertical {
@@ -177,10 +184,17 @@ QScrollBar::handle:vertical:hover {
     background: #adb5bd;
 }
 
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+    border: none;
+}
+
 QScrollBar:horizontal {
     background: #f8f9fa;
     height: 10px;
     margin: 0;
+    border-radius: 5px;
 }
 
 QScrollBar::handle:horizontal {
@@ -191,4 +205,10 @@ QScrollBar::handle:horizontal {
 
 QScrollBar::handle:horizontal:hover {
     background: #adb5bd;
+}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal,
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+    background: none;
+    border: none;
 }

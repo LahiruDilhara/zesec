@@ -18,6 +18,7 @@ from ..controllers.decrypt_controller import DecryptController
 from ..controllers.clean_controller import CleanController
 from ..controllers.key_controller import KeyController
 from ..widgets.file_selector import FileSelectorWidget
+from ..widgets.multi_file_selector import MultiFileSelectorWidget
 from ..widgets.password_input import PasswordInputWidget
 
 
@@ -41,6 +42,12 @@ class MainWindow(QMainWindow):
         
         # Connect controller signals
         self._setup_controller_connections()
+        
+        # State for batch processing
+        self._encryption_queue = []
+        self._encryption_results = []
+        self._decryption_queue = []
+        self._decryption_results = []
         
         # Initialize UI
         self._init_ui()
@@ -132,7 +139,7 @@ class MainWindow(QMainWindow):
         # File selection group
         file_group = QGroupBox("File Selection")
         file_layout = QVBoxLayout()
-        self._encrypt_file_selector = FileSelectorWidget()
+        self._encrypt_file_selector = MultiFileSelectorWidget()
         file_layout.addWidget(self._encrypt_file_selector)
         file_group.setLayout(file_layout)
         layout.addWidget(file_group)
@@ -174,7 +181,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._encrypt_btn)
         
         # Connect signals for dynamic button state
-        self._encrypt_file_selector.path_changed.connect(lambda _: self._update_encrypt_btn_state())
+        self._encrypt_file_selector.paths_changed.connect(lambda _: self._update_encrypt_btn_state())
         self._encrypt_password.text_changed.connect(lambda _: self._update_encrypt_btn_state())
         self._encrypt_password_confirm.text_changed.connect(lambda _: self._update_encrypt_btn_state())
         self._encrypt_key_file_selector.path_changed.connect(lambda _: self._update_encrypt_btn_state())
@@ -191,7 +198,7 @@ class MainWindow(QMainWindow):
         # File selection group
         file_group = QGroupBox("Encrypted File Selection")
         file_layout = QVBoxLayout()
-        self._decrypt_file_selector = FileSelectorWidget()
+        self._decrypt_file_selector = MultiFileSelectorWidget(file_filter="Encrypted Files (*.zesec);;All Files (*)")
         file_layout.addWidget(self._decrypt_file_selector)
         file_group.setLayout(file_layout)
         layout.addWidget(file_group)
@@ -221,7 +228,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._decrypt_btn)
         
         # Connect signals
-        self._decrypt_file_selector.path_changed.connect(lambda _: self._update_decrypt_btn_state())
+        self._decrypt_file_selector.paths_changed.connect(lambda _: self._update_decrypt_btn_state())
         self._decrypt_password.text_changed.connect(lambda _: self._update_decrypt_btn_state())
         self._decrypt_key_file_selector.path_changed.connect(lambda _: self._update_decrypt_btn_state())
         
@@ -343,9 +350,9 @@ class MainWindow(QMainWindow):
             
     def _on_encrypt_clicked(self):
         """Handle encrypt button click."""
-        file_path = self._encrypt_file_selector.get_path()
-        if not file_path:
-            self._show_error("Validation Error", "Please select a file to encrypt.")
+        paths = self._encrypt_file_selector.get_paths()
+        if not paths:
+            self._show_error("Validation Error", "Please select at least one file to encrypt.")
             return
             
         password = self._encrypt_password.get_password()
@@ -358,16 +365,44 @@ class MainWindow(QMainWindow):
             self._show_error("Validation Error", "Passwords do not match.")
             return
             
+        # Disable button to prevent concurrent runs
+        self._encrypt_btn.setEnabled(False)
+        self._encrypt_progress.setVisible(True)
+        
+        self._encryption_queue = paths.copy()
+        self._encryption_results = []
+        self._process_next_encryption()
+        
+    def _process_next_encryption(self):
+        """Process the next file in the encryption queue."""
+        if not self._encryption_queue:
+            self._encrypt_progress.setVisible(False)
+            successes = [r for r in self._encryption_results if r.success]
+            failures = [r for r in self._encryption_results if not r.success]
+            
+            msg = f"Batch encryption finished.\n\nSuccessfully encrypted: {len(successes)}\nFailed: {len(failures)}"
+            if failures:
+                msg += "\n\nFirst error:\n" + failures[0].error
+                
+            QMessageBox.information(self, "Batch Encryption", msg)
+            
+            # Clear form
+            self._encrypt_file_selector.clear()
+            self._encrypt_password.clear()
+            self._encrypt_password_confirm.clear()
+            self._encrypt_key_file_selector.clear()
+            self._update_encrypt_btn_state()
+            return
+            
+        next_file = self._encryption_queue.pop(0)
+        self._encrypt_progress.setValue(0)
+        
+        password = self._encrypt_password.get_password()
         key_file_path = self._encrypt_key_file_selector.get_path()
         clean_original = self._encrypt_clean_original.isChecked()
         
-        # Show progress
-        self._encrypt_progress.setVisible(True)
-        self._encrypt_progress.setValue(0)
-        
-        # Start encryption
         self._encrypt_controller.encrypt_file(
-            file_path,
+            next_file,
             password,
             key_file_path,
             clean_original
@@ -375,9 +410,9 @@ class MainWindow(QMainWindow):
         
     def _on_decrypt_clicked(self):
         """Handle decrypt button click."""
-        file_path = self._decrypt_file_selector.get_path()
-        if not file_path:
-            self._show_error("Validation Error", "Please select an encrypted file.")
+        paths = self._decrypt_file_selector.get_paths()
+        if not paths:
+            self._show_error("Validation Error", "Please select at least one encrypted file.")
             return
             
         password = self._decrypt_password.get_password()
@@ -385,15 +420,42 @@ class MainWindow(QMainWindow):
             self._show_error("Validation Error", "Please enter a password.")
             return
             
-        key_file_path = self._decrypt_key_file_selector.get_path()
-        
-        # Show progress
+        # Disable button
+        self._decrypt_btn.setEnabled(False)
         self._decrypt_progress.setVisible(True)
+        
+        self._decryption_queue = paths.copy()
+        self._decryption_results = []
+        self._process_next_decryption()
+        
+    def _process_next_decryption(self):
+        """Process the next file in the decryption queue."""
+        if not self._decryption_queue:
+            self._decrypt_progress.setVisible(False)
+            successes = [r for r in self._decryption_results if r.success]
+            failures = [r for r in self._decryption_results if not r.success]
+            
+            msg = f"Batch decryption finished.\n\nSuccessfully decrypted: {len(successes)}\nFailed: {len(failures)}"
+            if failures:
+                msg += "\n\nFirst error:\n" + failures[0].error
+                
+            QMessageBox.information(self, "Batch Decryption", msg)
+            
+            # Clear form
+            self._decrypt_file_selector.clear()
+            self._decrypt_password.clear()
+            self._decrypt_key_file_selector.clear()
+            self._update_decrypt_btn_state()
+            return
+            
+        next_file = self._decryption_queue.pop(0)
         self._decrypt_progress.setValue(0)
         
-        # Start decryption
+        password = self._decrypt_password.get_password()
+        key_file_path = self._decrypt_key_file_selector.get_path()
+        
         self._decrypt_controller.decrypt_file(
-            file_path,
+            next_file,
             password,
             key_file_path
         )
@@ -467,48 +529,13 @@ class MainWindow(QMainWindow):
             
     def _on_encrypt_completed(self, result: EncryptionResult):
         """Handle encryption completion."""
-        self._encrypt_progress.setVisible(False)
-        
-        if result.success:
-            QMessageBox.information(
-                self,
-                "Encryption Successful",
-                f"File encrypted successfully!\n\nOutput: {result.output_path}\n"
-                f"File size: {result.file_size:,} bytes"
-            )
-            # Clear form
-            self._encrypt_file_selector.clear()
-            self._encrypt_password.clear()
-            self._encrypt_password_confirm.clear()
-            self._encrypt_key_file_selector.clear()
-        else:
-            QMessageBox.critical(
-                self,
-                "Encryption Failed",
-                f"Encryption failed:\n{result.error}"
-            )
+        self._encryption_results.append(result)
+        self._process_next_encryption()
             
     def _on_decrypt_completed(self, result: EncryptionResult):
         """Handle decryption completion."""
-        self._decrypt_progress.setVisible(False)
-        
-        if result.success:
-            QMessageBox.information(
-                self,
-                "Decryption Successful",
-                f"File decrypted successfully!\n\nOutput: {result.output_path}\n"
-                f"File size: {result.file_size:,} bytes"
-            )
-            # Clear form
-            self._decrypt_file_selector.clear()
-            self._decrypt_password.clear()
-            self._decrypt_key_file_selector.clear()
-        else:
-            QMessageBox.critical(
-                self,
-                "Decryption Failed",
-                f"Decryption failed:\n{result.error}"
-            )
+        self._decryption_results.append(result)
+        self._process_next_decryption()
             
     def _on_clean_completed(self, success: bool, message: str):
         """Handle cleaning completion."""
@@ -543,14 +570,14 @@ class MainWindow(QMainWindow):
 
     def _update_encrypt_btn_state(self):
         """Update encrypt button state based on fields."""
-        has_file = bool(self._encrypt_file_selector.get_path())
+        has_file = len(self._encrypt_file_selector.get_paths()) > 0
         has_pw = bool(self._encrypt_password.get_password() and self._encrypt_password.get_password() == self._encrypt_password_confirm.get_password())
         has_key = bool(self._encrypt_key_file_selector.get_path())
         self._encrypt_btn.setEnabled(has_file and (has_pw or has_key))
         
     def _update_decrypt_btn_state(self):
         """Update decrypt button state based on fields."""
-        has_file = bool(self._decrypt_file_selector.get_path())
+        has_file = len(self._decrypt_file_selector.get_paths()) > 0
         has_pw = bool(self._decrypt_password.get_password())
         has_key = bool(self._decrypt_key_file_selector.get_path())
         self._decrypt_btn.setEnabled(has_file and (has_pw or has_key))
