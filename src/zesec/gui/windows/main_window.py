@@ -22,6 +22,7 @@ from ..widgets.file_selector import FileSelectorWidget
 from ..widgets.multi_file_selector import MultiFileSelectorWidget
 from ..widgets.password_input import PasswordInputWidget
 from ..widgets.hover_button import HoverButton
+from ..widgets.batch_progress import BatchProgressWidget
 
 
 class MainWindow(QMainWindow):
@@ -176,8 +177,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(options_group)
         
         # Progress bar
-        self._encrypt_progress = QProgressBar()
-        self._encrypt_progress.setVisible(False)
+        self._encrypt_progress = BatchProgressWidget()
         layout.addWidget(self._encrypt_progress)
         
         # Encrypt button
@@ -222,8 +222,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(key_group)
         
         # Progress bar
-        self._decrypt_progress = QProgressBar()
-        self._decrypt_progress.setVisible(False)
+        self._decrypt_progress = BatchProgressWidget()
         layout.addWidget(self._decrypt_progress)
         
         # Decrypt button
@@ -273,8 +272,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(warning_label)
         
         # Progress bar
-        self._clean_progress = QProgressBar()
-        self._clean_progress.setVisible(False)
+        self._clean_progress = BatchProgressWidget()
         layout.addWidget(self._clean_progress)
         
         # Clean button
@@ -370,7 +368,7 @@ class MainWindow(QMainWindow):
             
         # Disable button to prevent concurrent runs
         self._encrypt_btn.setEnabled(False)
-        self._encrypt_progress.setVisible(True)
+        self._encrypt_progress.reset(len(paths))
         
         self._encryption_queue = paths.copy()
         self._encryption_results = []
@@ -379,7 +377,6 @@ class MainWindow(QMainWindow):
     def _process_next_encryption(self):
         """Process the next file in the encryption queue."""
         if not self._encryption_queue:
-            self._encrypt_progress.setVisible(False)
             successes = [r for r in self._encryption_results if r.success]
             failures = [r for r in self._encryption_results if not r.success]
             
@@ -425,7 +422,7 @@ class MainWindow(QMainWindow):
             
         # Disable button
         self._decrypt_btn.setEnabled(False)
-        self._decrypt_progress.setVisible(True)
+        self._decrypt_progress.reset(len(paths))
         
         self._decryption_queue = paths.copy()
         self._decryption_results = []
@@ -434,7 +431,6 @@ class MainWindow(QMainWindow):
     def _process_next_decryption(self):
         """Process the next file in the decryption queue."""
         if not self._decryption_queue:
-            self._decrypt_progress.setVisible(False)
             successes = [r for r in self._decryption_results if r.success]
             failures = [r for r in self._decryption_results if not r.success]
             
@@ -483,7 +479,7 @@ class MainWindow(QMainWindow):
         if reply == QMessageBox.Yes:
             # Disable button
             self._clean_btn.setEnabled(False)
-            self._clean_progress.setVisible(True)
+            self._clean_progress.reset(len(paths))
             
             self._cleaning_queue = paths.copy()
             self._cleaning_results = []
@@ -492,7 +488,6 @@ class MainWindow(QMainWindow):
     def _process_next_cleaning(self):
         """Process the next file in the cleaning queue."""
         if not self._cleaning_queue:
-            self._clean_progress.setVisible(False)
             successes = [r for r in self._cleaning_results if r[0]]
             failures = [r for r in self._cleaning_results if not r[0]]
             
@@ -552,8 +547,7 @@ class MainWindow(QMainWindow):
             total_files = len(self._encryption_results) + len(self._encryption_queue) + 1
             if total_files > 0:
                 completed_files = len(self._encryption_results)
-                total_progress = int(((completed_files * 100) + value) / total_files)
-                self._encrypt_progress.setValue(total_progress)
+                self._encrypt_progress.update_progress(completed_files, total_files, value)
                 
         elif operation == "decrypt":
             if hasattr(self, '_current_decrypt_file'):
@@ -563,8 +557,7 @@ class MainWindow(QMainWindow):
             total_files = len(self._decryption_results) + len(self._decryption_queue) + 1
             if total_files > 0:
                 completed_files = len(self._decryption_results)
-                total_progress = int(((completed_files * 100) + value) / total_files)
-                self._decrypt_progress.setValue(total_progress)
+                self._decrypt_progress.update_progress(completed_files, total_files, value)
                 
         elif operation == "clean":
             if hasattr(self, '_current_clean_file'):
@@ -574,8 +567,7 @@ class MainWindow(QMainWindow):
             total_files = len(self._cleaning_results) + len(self._cleaning_queue) + 1
             if total_files > 0:
                 completed_files = len(self._cleaning_results)
-                total_progress = int(((completed_files * 100) + value) / total_files)
-                self._clean_progress.setValue(total_progress)
+                self._clean_progress.update_progress(completed_files, total_files, value)
         elif operation == "key":
             self._key_progress.setValue(value)
             
@@ -618,22 +610,28 @@ class MainWindow(QMainWindow):
 
     def _update_encrypt_btn_state(self):
         """Update encrypt button state based on fields."""
-        has_file = len(self._encrypt_file_selector.get_paths()) > 0
+        paths = self._encrypt_file_selector.get_paths()
+        has_file = len(paths) > 0
         has_pw = bool(self._encrypt_password.get_password() and self._encrypt_password.get_password() == self._encrypt_password_confirm.get_password())
         has_key = bool(self._encrypt_key_file_selector.get_path())
         self._encrypt_btn.setEnabled(has_file and (has_pw or has_key))
+        self._encrypt_progress.set_total(len(paths))
         
     def _update_decrypt_btn_state(self):
         """Update decrypt button state based on fields."""
-        has_file = len(self._decrypt_file_selector.get_paths()) > 0
+        paths = self._decrypt_file_selector.get_paths()
+        has_file = len(paths) > 0
         has_pw = bool(self._decrypt_password.get_password())
         has_key = bool(self._decrypt_key_file_selector.get_path())
         self._decrypt_btn.setEnabled(has_file and (has_pw or has_key))
+        self._decrypt_progress.set_total(len(paths))
         
     def _update_clean_btn_state(self):
         """Update clean button state based on fields."""
-        has_file = len(self._clean_file_selector.get_paths()) > 0
+        paths = self._clean_file_selector.get_paths()
+        has_file = len(paths) > 0
         self._clean_btn.setEnabled(has_file)
+        self._clean_progress.set_total(len(paths))
         
     def _update_key_btn_state(self):
         """Update generate key button state based on fields."""

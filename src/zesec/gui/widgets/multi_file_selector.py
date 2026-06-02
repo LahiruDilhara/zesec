@@ -26,6 +26,12 @@ class FileItemWidget(QWidget):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(5, 5, 5, 5)
         
+        # Number indicator
+        self.number_label = QLabel("1.")
+        self.number_label.setStyleSheet("background: transparent; font-weight: bold; color: #7f8c8d;")
+        self.number_label.setFixedWidth(20)
+        layout.addWidget(self.number_label, 0)
+        
         # Circle indicator
         self.status_circle = QLabel()
         self.status_circle.setFixedSize(12, 12)
@@ -56,6 +62,9 @@ class FileItemWidget(QWidget):
         
     def _set_circle_color(self, color: str):
         self.status_circle.setStyleSheet(f"background-color: {color}; border-radius: 6px;")
+        
+    def set_number(self, num: int):
+        self.number_label.setText(f"{num}.")
         
     def update_progress(self, value: int):
         self.progress.setValue(value)
@@ -138,6 +147,7 @@ class MultiFileSelectorWidget(QWidget):
                 self._list_widget.addItem(item)
                 
                 widget = FileItemWidget(path)
+                widget.set_number(self._list_widget.count())
                 widget.delete_clicked.connect(self._remove_item)
                 item.setSizeHint(QSize(0, 45))
                 self._list_widget.setItemWidget(item, widget)
@@ -158,6 +168,13 @@ class MultiFileSelectorWidget(QWidget):
             if item.data(Qt.UserRole) == path:
                 self._list_widget.takeItem(i)
                 break
+                
+        # Update numbering for remaining items
+        for i in range(self._list_widget.count()):
+            item = self._list_widget.item(i)
+            widget = self._list_widget.itemWidget(item)
+            if isinstance(widget, FileItemWidget):
+                widget.set_number(i + 1)
                 
         self._update_ui_state()
         self.paths_changed.emit(self.get_paths())
