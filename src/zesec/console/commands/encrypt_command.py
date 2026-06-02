@@ -103,38 +103,49 @@ class EncryptCommand(BaseCommand):
             encryptor = self._container.encryptor()
             
             success_count = 0
-            with tqdm(total=len(files), desc="Overall Progress", unit="file") as main_pbar:
+            failed_files = []
+            
+            with tqdm(total=len(files) * 100, desc="Overall Progress", unit="%") as main_pbar:
                 for file_path in files:
                     file_path = file_path.resolve()
                     if not file_path.exists():
-                        console.print(f"[red]File does not exist: {file_path}[/red]")
-                        main_pbar.update(1)
+                        failed_files.append((file_path, "File does not exist"))
+                        main_pbar.update(100)
                         continue
                         
                     output_path = dest_dir / f"{file_path.name}.zesec"
-                        
-                    with tqdm(total=100, desc=f"Encrypting {file_path.name}", leave=False, unit="%") as file_pbar:
-                        def progress_cb(pct: int):
-                            file_pbar.n = pct
-                            file_pbar.refresh()
-                            
-                        result = encryptor.encrypt_file(
-                            file_path,
-                            password,
-                            output_path=output_path,
-                            clean_original=clean_original,
-                            key_file_path=key_file_path,
-                            progress_callback=progress_cb
-                        )
                     
+                    last_pct = [0]
+                    def progress_cb(pct: int):
+                        delta = pct - last_pct[0]
+                        if delta > 0:
+                            main_pbar.update(delta)
+                            last_pct[0] = pct
+                            
+                    result = encryptor.encrypt_file(
+                        file_path,
+                        password,
+                        output_path=output_path,
+                        clean_original=clean_original,
+                        key_file_path=key_file_path,
+                        progress_callback=progress_cb
+                    )
+                
                     if result.success:
-                        console.print(f"[green]✓ Encrypted successfully: {result.output_path}[/green]")
                         success_count += 1
                     else:
-                        console.print(f"[red]✗ Encryption failed: {result.error}[/red]")
-                    main_pbar.update(1)
+                        failed_files.append((file_path, result.error))
+                        
+                    # Make sure it reaches 100 for this file
+                    remaining = 100 - last_pct[0]
+                    if remaining > 0:
+                        main_pbar.update(remaining)
                     
             console.print(f"\n[bold]Completed: {success_count}/{len(files)} files encrypted successfully.[/bold]")
+            if failed_files:
+                console.print("\n[red]Failed files:[/red]")
+                for f, err in failed_files:
+                    console.print(f"[red] - {f.name}: {err}[/red]")
                 
         except Exception as e:
             console.print(f"[red]Error: {e}[/red]")
@@ -247,12 +258,14 @@ class DecryptCommand(BaseCommand):
             encryptor = self._container.encryptor()
             
             success_count = 0
-            with tqdm(total=len(files), desc="Overall Progress", unit="file") as main_pbar:
+            failed_files = []
+            
+            with tqdm(total=len(files) * 100, desc="Overall Progress", unit="%") as main_pbar:
                 for file_path in files:
                     file_path = file_path.resolve()
                     if not file_path.exists():
-                        console.print(f"[red]File does not exist: {file_path}[/red]")
-                        main_pbar.update(1)
+                        failed_files.append((file_path, "File does not exist"))
+                        main_pbar.update(100)
                         continue
                     
                     orig_name = file_path.name
@@ -260,28 +273,37 @@ class DecryptCommand(BaseCommand):
                         orig_name = orig_name[:-6]
                     output_path = dest_dir / orig_name
                     
-                    with tqdm(total=100, desc=f"Decrypting {file_path.name}", leave=False, unit="%") as file_pbar:
-                        def progress_cb(pct: int):
-                            file_pbar.n = pct
-                            file_pbar.refresh()
+                    last_pct = [0]
+                    def progress_cb(pct: int):
+                        delta = pct - last_pct[0]
+                        if delta > 0:
+                            main_pbar.update(delta)
+                            last_pct[0] = pct
                             
-                        result = encryptor.decrypt_file(
-                            file_path,
-                            password,
-                            output_path=output_path,
-                            clean_original=clean_original,
-                            key_file_path=key_file_path,
-                            progress_callback=progress_cb
-                        )
-                    
+                    result = encryptor.decrypt_file(
+                        file_path,
+                        password,
+                        output_path=output_path,
+                        clean_original=clean_original,
+                        key_file_path=key_file_path,
+                        progress_callback=progress_cb
+                    )
+                
                     if result.success:
-                        console.print(f"[green]✓ Decrypted successfully: {result.output_path}[/green]")
                         success_count += 1
                     else:
-                        console.print(f"[red]✗ Decryption failed: {result.error}[/red]")
-                    main_pbar.update(1)
+                        failed_files.append((file_path, result.error))
+                        
+                    # Make sure it reaches 100 for this file
+                    remaining = 100 - last_pct[0]
+                    if remaining > 0:
+                        main_pbar.update(remaining)
                     
             console.print(f"\n[bold]Completed: {success_count}/{len(files)} files decrypted successfully.[/bold]")
+            if failed_files:
+                console.print("\n[red]Failed files:[/red]")
+                for f, err in failed_files:
+                    console.print(f"[red] - {f.name}: {err}[/red]")
                 
         except Exception as e:
             console.print(f"[red]Error: {e}[/red]")

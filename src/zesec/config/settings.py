@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
+import sys
 from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -26,6 +27,7 @@ class Settings(BaseSettings):
     BUFFER_SIZE: int = 1024 * 1024  # 1MB buffer for file operations
 
     # Logging
+    ENABLE_LOGS: bool = False
     LOG_LEVEL: str = "INFO"
     LOG_FILE: Optional[str] = None
     LOG_FORMAT: str = "{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function} | {message}"
@@ -38,7 +40,7 @@ class Settings(BaseSettings):
     ENCRYPTED_EXTENSION: str = ".zesec"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=".env" if not getattr(sys, 'frozen', False) else None,
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",  # Ignore extra env vars

@@ -99,6 +99,10 @@ class CommandParser:
             console.print(f"[red]Unknown command: {command_name}[/red]")
             console.print(f"[dim]Type 'help' for available commands.[/dim]")
             return None
+            
+        if "--help" in args or "-h" in args:
+            console.print(command.get_help())
+            return None
         
         try:
             return command.execute(args)

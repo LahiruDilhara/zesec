@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import Optional
 
 from prompt_toolkit import PromptSession
-from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.completion import WordCompleter, PathCompleter, Completer, Completion
+from prompt_toolkit.document import Document
 from prompt_toolkit.history import FileHistory
 from rich.console import Console
 
@@ -17,6 +18,25 @@ from .commands.base import BaseCommand
 # Initialize rich console for output
 rich_console = Console()
 
+class ZesecCompleter(Completer):
+    """Custom completer combining command and path completion."""
+    def __init__(self, command_completer: Completer, path_completer: Completer):
+        self.command_completer = command_completer
+        self.path_completer = path_completer
+
+    def get_completions(self, document: Document, complete_event):
+        text_before_cursor = document.text_before_cursor
+        
+        # If no spaces, autocomplete commands
+        if " " not in text_before_cursor:
+            yield from self.command_completer.get_completions(document, complete_event)
+        else:
+            # Otherwise yield paths for the current word
+            word = document.get_word_before_cursor(WORD=True)
+            path_doc = Document(word, cursor_position=len(word))
+            yield from self.path_completer.get_completions(path_doc, complete_event)
+
+
 
 def print_banner() -> None:
     """Print application banner."""
@@ -24,7 +44,8 @@ def print_banner() -> None:
     # Inside space: 39 chars (between ║ characters)
     # Text 1: "ZESEC - Secure File Manager" = 29 chars -> 5 spaces each side
     # Text 2: "Encryption & Secure File Cleaning" = 33 chars -> 3 spaces each side
-    banner = """╔═══════════════════════════════════════════╗
+    banner = """
+╔═══════════════════════════════════════════╗
 ║     ZESEC - Secure File Manager           ║
 ║   Encryption & Secure File Cleaning       ║
 ╚═══════════════════════════════════════════╝"""
@@ -84,7 +105,9 @@ def main() -> int:
         "clean", "clean-dir",
         "help", "exit", "quit", "clear",
     ]
-    completer = WordCompleter(commands, ignore_case=True)
+    word_completer = WordCompleter(commands, ignore_case=True)
+    path_completer = PathCompleter(expanduser=True)
+    completer = ZesecCompleter(word_completer, path_completer)
     
     # Setup history
     history_file = Path.home() / ".zesec_history"

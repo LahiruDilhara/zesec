@@ -21,6 +21,9 @@ def setup_logging() -> None:
 
     # Remove default handler
     logger.remove()
+    
+    if not settings.ENABLE_LOGS:
+        return
 
     def format_console(record: dict) -> str:
         """Format log record with custom colors.
