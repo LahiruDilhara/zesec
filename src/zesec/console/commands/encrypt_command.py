@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Optional
 
+from tqdm import tqdm
 from rich.console import Console
 from rich.prompt import Prompt
 
@@ -40,18 +41,22 @@ class EncryptCommand(BaseCommand):
         """
         if not args:
             console.print("[red]Error: encrypt requires at least one file path[/red]")
-            console.print("[dim]Usage: encrypt <file1> [file2...] [--key-file <path>] [--no-clean][/dim]")
+            console.print("[dim]Usage: encrypt <file1> [file2...] --dest <dir> [--key-file <path>] [--no-clean][/dim]")
             return None
         
         # Parse options and files
         files = []
         key_file_path = None
+        dest_dir = None
         clean_original = True
         
         i = 0
         while i < len(args):
             if args[i] == "--key-file" and i + 1 < len(args):
                 key_file_path = Path(args[i + 1])
+                i += 2
+            elif args[i] in ("--dest", "-d") and i + 1 < len(args):
+                dest_dir = Path(args[i + 1])
                 i += 2
             elif args[i] == "--no-clean":
                 clean_original = False
@@ -66,6 +71,14 @@ class EncryptCommand(BaseCommand):
         if not files:
             console.print("[red]Error: No input files provided[/red]")
             return None
+            
+        if not dest_dir:
+            console.print("[red]Error: Destination directory (--dest) is required.[/red]")
+            return None
+            
+        dest_dir = dest_dir.resolve()
+        if not dest_dir.exists():
+            dest_dir.mkdir(parents=True, exist_ok=True)
         
         try:
             if key_file_path:
@@ -90,26 +103,36 @@ class EncryptCommand(BaseCommand):
             encryptor = self._container.encryptor()
             
             success_count = 0
-            for file_path in files:
-                file_path = file_path.resolve()
-                if not file_path.exists():
-                    console.print(f"[red]File does not exist: {file_path}[/red]")
-                    continue
+            with tqdm(total=len(files), desc="Overall Progress", unit="file") as main_pbar:
+                for file_path in files:
+                    file_path = file_path.resolve()
+                    if not file_path.exists():
+                        console.print(f"[red]File does not exist: {file_path}[/red]")
+                        main_pbar.update(1)
+                        continue
+                        
+                    output_path = dest_dir / f"{file_path.name}.zesec"
+                        
+                    with tqdm(total=100, desc=f"Encrypting {file_path.name}", leave=False, unit="%") as file_pbar:
+                        def progress_cb(pct: int):
+                            file_pbar.n = pct
+                            file_pbar.refresh()
+                            
+                        result = encryptor.encrypt_file(
+                            file_path,
+                            password,
+                            output_path=output_path,
+                            clean_original=clean_original,
+                            key_file_path=key_file_path,
+                            progress_callback=progress_cb
+                        )
                     
-                console.print(f"[cyan]Encrypting: {file_path}[/cyan]")
-                result = encryptor.encrypt_file(
-                    file_path,
-                    password,
-                    clean_original=clean_original,
-                    key_file_path=key_file_path,
-                )
-                
-                if result.success:
-                    console.print(f"[green]✓ Encrypted successfully: {result.output_path}[/green]")
-                    console.print(f"[dim]File size: {result.file_size} bytes[/dim]")
-                    success_count += 1
-                else:
-                    console.print(f"[red]✗ Encryption failed: {result.error}[/red]")
+                    if result.success:
+                        console.print(f"[green]✓ Encrypted successfully: {result.output_path}[/green]")
+                        success_count += 1
+                    else:
+                        console.print(f"[red]✗ Encryption failed: {result.error}[/red]")
+                    main_pbar.update(1)
                     
             console.print(f"\n[bold]Completed: {success_count}/{len(files)} files encrypted successfully.[/bold]")
                 
@@ -129,13 +152,14 @@ class EncryptCommand(BaseCommand):
           file              Paths to the files to encrypt
         
         Options:
+          --dest, -d <dir>  Destination directory (required)
           --key-file <path> Use a key file in addition to password
           --no-clean        Don't securely clean original file after encryption
         
         Examples:
-          encrypt document1.txt document2.txt
-          encrypt document.txt --key-file mykey.key
-          encrypt document.txt --no-clean
+          encrypt document1.txt document2.txt --dest /path/to/output
+          encrypt document.txt -d output/ --key-file mykey.key
+          encrypt document.txt -d . --no-clean
         """
 
 
@@ -167,18 +191,26 @@ class DecryptCommand(BaseCommand):
         """
         if not args:
             console.print("[red]Error: decrypt requires at least one file path[/red]")
-            console.print("[dim]Usage: decrypt <file1> [file2...] [--key-file <path>][/dim]")
+            console.print("[dim]Usage: decrypt <file1> [file2...] --dest <dir> [--key-file <path>][/dim]")
             return None
         
         # Parse options
         files = []
         key_file_path = None
+        dest_dir = None
+        clean_original = False
         
         i = 0
         while i < len(args):
             if args[i] == "--key-file" and i + 1 < len(args):
                 key_file_path = Path(args[i + 1])
                 i += 2
+            elif args[i] in ("--dest", "-d") and i + 1 < len(args):
+                dest_dir = Path(args[i + 1])
+                i += 2
+            elif args[i] == "--clean":
+                clean_original = True
+                i += 1
             elif not args[i].startswith("--"):
                 files.append(Path(args[i]))
                 i += 1
@@ -189,6 +221,14 @@ class DecryptCommand(BaseCommand):
         if not files:
             console.print("[red]Error: No input files provided[/red]")
             return None
+            
+        if not dest_dir:
+            console.print("[red]Error: Destination directory (--dest) is required.[/red]")
+            return None
+            
+        dest_dir = dest_dir.resolve()
+        if not dest_dir.exists():
+            dest_dir.mkdir(parents=True, exist_ok=True)
         
         try:
             if key_file_path:
@@ -207,26 +247,39 @@ class DecryptCommand(BaseCommand):
             encryptor = self._container.encryptor()
             
             success_count = 0
-            for file_path in files:
-                file_path = file_path.resolve()
-                if not file_path.exists():
-                    console.print(f"[red]File does not exist: {file_path}[/red]")
-                    continue
-                
-                # Decrypt file
-                console.print(f"[cyan]Decrypting: {file_path}[/cyan]")
-                result = encryptor.decrypt_file(
-                    file_path,
-                    password,
-                    key_file_path=key_file_path,
-                )
-                
-                if result.success:
-                    console.print(f"[green]✓ Decrypted successfully: {result.output_path}[/green]")
-                    console.print(f"[dim]File size: {result.file_size} bytes[/dim]")
-                    success_count += 1
-                else:
-                    console.print(f"[red]✗ Decryption failed: {result.error}[/red]")
+            with tqdm(total=len(files), desc="Overall Progress", unit="file") as main_pbar:
+                for file_path in files:
+                    file_path = file_path.resolve()
+                    if not file_path.exists():
+                        console.print(f"[red]File does not exist: {file_path}[/red]")
+                        main_pbar.update(1)
+                        continue
+                    
+                    orig_name = file_path.name
+                    if orig_name.endswith('.zesec'):
+                        orig_name = orig_name[:-6]
+                    output_path = dest_dir / orig_name
+                    
+                    with tqdm(total=100, desc=f"Decrypting {file_path.name}", leave=False, unit="%") as file_pbar:
+                        def progress_cb(pct: int):
+                            file_pbar.n = pct
+                            file_pbar.refresh()
+                            
+                        result = encryptor.decrypt_file(
+                            file_path,
+                            password,
+                            output_path=output_path,
+                            clean_original=clean_original,
+                            key_file_path=key_file_path,
+                            progress_callback=progress_cb
+                        )
+                    
+                    if result.success:
+                        console.print(f"[green]✓ Decrypted successfully: {result.output_path}[/green]")
+                        success_count += 1
+                    else:
+                        console.print(f"[red]✗ Decryption failed: {result.error}[/red]")
+                    main_pbar.update(1)
                     
             console.print(f"\n[bold]Completed: {success_count}/{len(files)} files decrypted successfully.[/bold]")
                 
@@ -246,10 +299,12 @@ class DecryptCommand(BaseCommand):
           file              Paths to the encrypted files
         
         Options:
+          --dest, -d <dir>  Destination directory (required)
           --key-file <path> Key file path (required if used during encryption)
+          --clean           Securely delete original encrypted file after decryption
         
         Examples:
-          decrypt document1.txt.zesec document2.txt.zesec
-          decrypt document.txt.zesec --key-file mykey.key
+          decrypt document1.txt.zesec document2.txt.zesec -d /path/to/output
+          decrypt document.txt.zesec -d . --key-file mykey.key
         """
 

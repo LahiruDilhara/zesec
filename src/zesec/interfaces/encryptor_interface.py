@@ -45,6 +45,7 @@ class IEncryptor(Protocol):
         file_path: Path,
         password: str,
         output_path: Path | None = None,
+        clean_original: bool = False,
         key_file_path: Path | None = None,
         progress_callback: Callable[[int], None] | None = None,
     ) -> EncryptionResult:
@@ -54,6 +55,7 @@ class IEncryptor(Protocol):
             file_path: Path to the encrypted file
             password: Password used for encryption
             output_path: Optional output path. If None, removes .zesec extension
+            clean_original: If True, securely clean original encrypted file after decryption
             key_file_path: Optional path to key file. Required if used during encryption
             
         Returns:

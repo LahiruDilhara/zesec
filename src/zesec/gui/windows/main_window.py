@@ -104,8 +104,8 @@ class MainWindow(QMainWindow):
     def _init_ui(self):
         """Initialize UI components."""
         self.setWindowTitle("Zesec - Secure File Manager")
-        self.resize(900, 750)
-        self.setMinimumSize(700, 600)
+        self.resize(900, 800)
+        self.setMinimumSize(700, 750)
         
         # Ctrl+W shortcut to close
         self._close_shortcut = QShortcut(QKeySequence("Ctrl+W"), self)
@@ -160,6 +160,14 @@ class MainWindow(QMainWindow):
         self._encrypt_password_confirm.set_match_target(self._encrypt_password)
         layout.addWidget(self._encrypt_password_confirm)
         
+        # Destination Directory
+        dest_group = QGroupBox("Destination Directory")
+        dest_layout = QVBoxLayout()
+        self._encrypt_dest_selector = FileSelectorWidget(is_directory=True)
+        dest_layout.addWidget(self._encrypt_dest_selector)
+        dest_group.setLayout(dest_layout)
+        layout.addWidget(dest_group)
+        
         # Key file selection (optional)
         key_group = QGroupBox("Key File (Optional)")
         key_layout = QVBoxLayout()
@@ -192,6 +200,7 @@ class MainWindow(QMainWindow):
         self._encrypt_file_selector.paths_changed.connect(lambda _: self._update_encrypt_btn_state())
         self._encrypt_password.text_changed.connect(lambda _: self._update_encrypt_btn_state())
         self._encrypt_password_confirm.text_changed.connect(lambda _: self._update_encrypt_btn_state())
+        self._encrypt_dest_selector.path_changed.connect(lambda _: self._update_encrypt_btn_state())
         self._encrypt_key_file_selector.path_changed.connect(lambda _: self._update_encrypt_btn_state())
         
         layout.addStretch()
@@ -215,6 +224,14 @@ class MainWindow(QMainWindow):
         self._decrypt_password = PasswordInputWidget(label="Password:")
         layout.addWidget(self._decrypt_password)
         
+        # Destination Directory
+        dest_group = QGroupBox("Destination Directory")
+        dest_layout = QVBoxLayout()
+        self._decrypt_dest_selector = FileSelectorWidget(is_directory=True)
+        dest_layout.addWidget(self._decrypt_dest_selector)
+        dest_group.setLayout(dest_layout)
+        layout.addWidget(dest_group)
+        
         # Key file selection (optional)
         key_group = QGroupBox("Key File (If used during encryption)")
         key_layout = QVBoxLayout()
@@ -222,6 +239,15 @@ class MainWindow(QMainWindow):
         key_layout.addWidget(self._decrypt_key_file_selector)
         key_group.setLayout(key_layout)
         layout.addWidget(key_group)
+        # Options
+        options_group = QGroupBox("Options")
+        options_layout = QVBoxLayout()
+        self._decrypt_clean_original = QCheckBox("Securely delete original encrypted file after decryption")
+        self._decrypt_clean_original.setCursor(Qt.PointingHandCursor)
+        self._decrypt_clean_original.setChecked(False)
+        options_layout.addWidget(self._decrypt_clean_original)
+        options_group.setLayout(options_layout)
+        layout.addWidget(options_group)
         
         # Progress bar
         self._decrypt_progress = BatchProgressWidget()
@@ -236,6 +262,7 @@ class MainWindow(QMainWindow):
         # Connect signals
         self._decrypt_file_selector.paths_changed.connect(lambda _: self._update_decrypt_btn_state())
         self._decrypt_password.text_changed.connect(lambda _: self._update_decrypt_btn_state())
+        self._decrypt_dest_selector.path_changed.connect(lambda _: self._update_decrypt_btn_state())
         self._decrypt_key_file_selector.path_changed.connect(lambda _: self._update_decrypt_btn_state())
         
         layout.addStretch()
@@ -394,6 +421,7 @@ class MainWindow(QMainWindow):
             self._encrypt_password.clear()
             self._encrypt_password_confirm.clear()
             self._encrypt_key_file_selector.clear()
+            self._encrypt_dest_selector.clear()
             self._update_encrypt_btn_state()
             return
             
@@ -403,10 +431,13 @@ class MainWindow(QMainWindow):
         password = self._encrypt_password.get_password()
         key_file_path = self._encrypt_key_file_selector.get_path()
         clean_original = self._encrypt_clean_original.isChecked()
+        dest_dir = self._encrypt_dest_selector.get_path()
+        output_path = dest_dir / f"{next_file.name}.zesec" if dest_dir else None
         
         self._encrypt_controller.encrypt_file(
             next_file,
             password,
+            output_path,
             key_file_path,
             clean_original
         )
@@ -447,6 +478,7 @@ class MainWindow(QMainWindow):
             self._decrypt_file_selector.clear()
             self._decrypt_password.clear()
             self._decrypt_key_file_selector.clear()
+            self._decrypt_dest_selector.clear()
             self._update_decrypt_btn_state()
             return
             
@@ -455,11 +487,20 @@ class MainWindow(QMainWindow):
         
         password = self._decrypt_password.get_password()
         key_file_path = self._decrypt_key_file_selector.get_path()
+        dest_dir = self._decrypt_dest_selector.get_path()
+        clean_original = self._decrypt_clean_original.isChecked()
+        
+        orig_name = next_file.name
+        if orig_name.endswith('.zesec'):
+            orig_name = orig_name[:-6]
+        output_path = dest_dir / orig_name if dest_dir else None
         
         self._decrypt_controller.decrypt_file(
             next_file,
             password,
-            key_file_path
+            output_path,
+            key_file_path,
+            clean_original
         )
         
     def _on_clean_clicked(self):
@@ -615,18 +656,20 @@ class MainWindow(QMainWindow):
         """Update encrypt button state based on fields."""
         paths = self._encrypt_file_selector.get_paths()
         has_file = len(paths) > 0
+        has_dest = bool(self._encrypt_dest_selector.get_path())
         has_pw = bool(self._encrypt_password.get_password() and self._encrypt_password.get_password() == self._encrypt_password_confirm.get_password())
         has_key = bool(self._encrypt_key_file_selector.get_path())
-        self._encrypt_btn.setEnabled(has_file and (has_pw or has_key))
+        self._encrypt_btn.setEnabled(has_file and has_dest and (has_pw or has_key))
         self._encrypt_progress.set_total(len(paths))
         
     def _update_decrypt_btn_state(self):
         """Update decrypt button state based on fields."""
         paths = self._decrypt_file_selector.get_paths()
         has_file = len(paths) > 0
+        has_dest = bool(self._decrypt_dest_selector.get_path())
         has_pw = bool(self._decrypt_password.get_password())
         has_key = bool(self._decrypt_key_file_selector.get_path())
-        self._decrypt_btn.setEnabled(has_file and (has_pw or has_key))
+        self._decrypt_btn.setEnabled(has_file and has_dest and (has_pw or has_key))
         self._decrypt_progress.set_total(len(paths))
         
     def _update_clean_btn_state(self):

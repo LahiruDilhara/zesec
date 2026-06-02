@@ -34,6 +34,7 @@ class EncryptController(QObject):
         self,
         file_path: Path,
         password: str,
+        output_path: Optional[Path] = None,
         key_file_path: Optional[Path] = None,
         clean_original: bool = True
     ):
@@ -42,6 +43,7 @@ class EncryptController(QObject):
         Args:
             file_path: Path to file to encrypt
             password: Encryption password
+            output_path: Optional output path
             key_file_path: Optional key file path
             clean_original: Whether to clean original file
         """
@@ -64,6 +66,7 @@ class EncryptController(QObject):
             self._encryptor,
             file_path,
             password,
+            output_path,
             key_file_path,
             clean_original
         )

@@ -163,6 +163,7 @@ class EncryptorService:
         file_path: Path,
         password: str,
         output_path: Optional[Path] = None,
+        clean_original: bool = False,
         key_file_path: Optional[Path] = None,
         progress_callback: Optional[Callable[[int], None]] = None,
     ) -> EncryptionResult:
@@ -229,6 +230,12 @@ class EncryptorService:
             if not self._file_handler.write_file(output_path, plaintext):
                 raise DecryptionError(f"Failed to write decrypted file: {output_path}")
 
+            # Clean original encrypted file if requested
+            if clean_original and self._cleaner:
+                self._logger.info(f"Cleaning original encrypted file: {file_path}")
+                if not self._cleaner.clean_file(file_path):
+                    self._logger.warning(f"Failed to cleanly delete original file: {file_path}")
+            
             if progress_callback: progress_callback(100)
             self._logger.success(f"Decryption completed: {output_path}")
 

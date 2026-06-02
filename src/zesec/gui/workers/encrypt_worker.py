@@ -21,6 +21,7 @@ class EncryptWorker(QThread):
         encryptor: IEncryptor,
         file_path: Path,
         password: str,
+        output_path: Optional[Path] = None,
         key_file_path: Optional[Path] = None,
         clean_original: bool = True,
         parent=None
@@ -31,6 +32,7 @@ class EncryptWorker(QThread):
             encryptor: Encryption service
             file_path: Path to file to encrypt
             password: Encryption password
+            output_path: Optional output path
             key_file_path: Optional key file path
             clean_original: Whether to clean original file
             parent: Parent QObject
@@ -39,6 +41,7 @@ class EncryptWorker(QThread):
         self._encryptor = encryptor
         self._file_path = file_path
         self._password = password
+        self._output_path = output_path
         self._key_file_path = key_file_path
         self._clean_original = clean_original
         
@@ -50,8 +53,10 @@ class EncryptWorker(QThread):
             result = self._encryptor.encrypt_file(
                 self._file_path,
                 self._password,
+                output_path=self._output_path,
                 key_file_path=self._key_file_path,
-                clean_original=self._clean_original
+                clean_original=self._clean_original,
+                progress_callback=self.progress.emit
             )
             
             self.progress.emit(100)

@@ -21,6 +21,8 @@ class DecryptWorker(QThread):
         encryptor: IEncryptor,
         file_path: Path,
         password: str,
+        output_path: Optional[Path] = None,
+        clean_original: bool = False,
         key_file_path: Optional[Path] = None,
         parent=None
     ):
@@ -37,6 +39,8 @@ class DecryptWorker(QThread):
         self._encryptor = encryptor
         self._file_path = file_path
         self._password = password
+        self._output_path = output_path
+        self._clean_original = clean_original
         self._key_file_path = key_file_path
         
     def run(self):
@@ -47,7 +51,10 @@ class DecryptWorker(QThread):
             result = self._encryptor.decrypt_file(
                 self._file_path,
                 self._password,
-                key_file_path=self._key_file_path
+                output_path=self._output_path,
+                clean_original=self._clean_original,
+                key_file_path=self._key_file_path,
+                progress_callback=self.progress.emit
             )
             
             self.progress.emit(100)

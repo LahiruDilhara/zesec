@@ -34,13 +34,16 @@ class DecryptController(QObject):
         self,
         file_path: Path,
         password: str,
-        key_file_path: Optional[Path] = None
+        output_path: Optional[Path] = None,
+        key_file_path: Optional[Path] = None,
+        clean_original: bool = False
     ):
         """Initiate decryption operation.
         
         Args:
             file_path: Path to encrypted file
             password: Decryption password
+            output_path: Optional output path
             key_file_path: Optional key file path
         """
         # Validation
@@ -62,6 +65,8 @@ class DecryptController(QObject):
             self._encryptor,
             file_path,
             password,
+            output_path,
+            clean_original,
             key_file_path
         )
         
