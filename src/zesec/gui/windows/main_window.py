@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QFileDialog, QMessageBox,
     QTabWidget, QCheckBox, QProgressBar, QGroupBox,
-    QFormLayout
+    QFormLayout, QLineEdit
 )
 from PySide6.QtCore import Qt
 
@@ -167,10 +167,17 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._encrypt_progress)
         
         # Encrypt button
-        encrypt_btn = QPushButton("Encrypt File")
-        encrypt_btn.setStyleSheet("font-weight: bold; padding: 8px;")
-        encrypt_btn.clicked.connect(self._on_encrypt_clicked)
-        layout.addWidget(encrypt_btn)
+        self._encrypt_btn = QPushButton("Encrypt File")
+        self._encrypt_btn.setStyleSheet("font-weight: bold; padding: 8px;")
+        self._encrypt_btn.clicked.connect(self._on_encrypt_clicked)
+        self._encrypt_btn.setEnabled(False)
+        layout.addWidget(self._encrypt_btn)
+        
+        # Connect signals for dynamic button state
+        self._encrypt_file_selector.path_changed.connect(lambda _: self._update_encrypt_btn_state())
+        self._encrypt_password.text_changed.connect(lambda _: self._update_encrypt_btn_state())
+        self._encrypt_password_confirm.text_changed.connect(lambda _: self._update_encrypt_btn_state())
+        self._encrypt_key_file_selector.path_changed.connect(lambda _: self._update_encrypt_btn_state())
         
         layout.addStretch()
         return widget
@@ -207,10 +214,16 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._decrypt_progress)
         
         # Decrypt button
-        decrypt_btn = QPushButton("Decrypt File")
-        decrypt_btn.setStyleSheet("font-weight: bold; padding: 8px;")
-        decrypt_btn.clicked.connect(self._on_decrypt_clicked)
-        layout.addWidget(decrypt_btn)
+        self._decrypt_btn = QPushButton("Decrypt File")
+        self._decrypt_btn.setStyleSheet("font-weight: bold; padding: 8px;")
+        self._decrypt_btn.clicked.connect(self._on_decrypt_clicked)
+        self._decrypt_btn.setEnabled(False)
+        layout.addWidget(self._decrypt_btn)
+        
+        # Connect signals
+        self._decrypt_file_selector.path_changed.connect(lambda _: self._update_decrypt_btn_state())
+        self._decrypt_password.text_changed.connect(lambda _: self._update_decrypt_btn_state())
+        self._decrypt_key_file_selector.path_changed.connect(lambda _: self._update_decrypt_btn_state())
         
         layout.addStretch()
         return widget
@@ -253,10 +266,14 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._clean_progress)
         
         # Clean button
-        clean_btn = QPushButton("Clean File")
-        clean_btn.setStyleSheet("font-weight: bold; padding: 8px; background-color: #d32f2f; color: white;")
-        clean_btn.clicked.connect(self._on_clean_clicked)
-        layout.addWidget(clean_btn)
+        self._clean_btn = QPushButton("Clean File")
+        self._clean_btn.setStyleSheet("font-weight: bold; padding: 8px; background-color: #d32f2f; color: white;")
+        self._clean_btn.clicked.connect(self._on_clean_clicked)
+        self._clean_btn.setEnabled(False)
+        layout.addWidget(self._clean_btn)
+        
+        # Connect signals
+        self._clean_file_selector.path_changed.connect(lambda _: self._update_clean_btn_state())
         
         layout.addStretch()
         return widget
@@ -278,11 +295,19 @@ class MainWindow(QMainWindow):
         # Key file selection
         key_group = QGroupBox("Key File Location")
         key_layout = QVBoxLayout()
-        self._key_file_selector = FileSelectorWidget()
-        # Override browse to use save dialog
-        self._key_file_selector._browse_btn.clicked.disconnect()
-        self._key_file_selector._browse_btn.clicked.connect(self._browse_key_file_save)
-        key_layout.addWidget(self._key_file_selector)
+        
+        # Directory selector
+        self._key_dir_selector = FileSelectorWidget(is_directory=True)
+        key_layout.addWidget(self._key_dir_selector)
+        
+        # File name input
+        name_layout = QHBoxLayout()
+        self._key_name_edit = QLineEdit()
+        self._key_name_edit.setPlaceholderText("Enter key name...")
+        name_layout.addWidget(self._key_name_edit)
+        name_layout.addWidget(QLabel(".key"))
+        key_layout.addLayout(name_layout)
+        
         key_group.setLayout(key_layout)
         layout.addWidget(key_group)
         
@@ -301,21 +326,20 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._key_progress)
         
         # Generate button
-        generate_btn = QPushButton("Generate Key File")
-        generate_btn.setStyleSheet("font-weight: bold; padding: 8px;")
-        generate_btn.clicked.connect(self._on_generate_key_clicked)
-        layout.addWidget(generate_btn)
+        self._generate_btn = QPushButton("Generate Key File")
+        self._generate_btn.setStyleSheet("font-weight: bold; padding: 8px;")
+        self._generate_btn.clicked.connect(self._on_generate_key_clicked)
+        self._generate_btn.setEnabled(False)
+        layout.addWidget(self._generate_btn)
+        
+        # Connect signals
+        self._key_dir_selector.path_changed.connect(lambda _: self._update_key_btn_state())
+        self._key_name_edit.textChanged.connect(lambda _: self._update_key_btn_state())
         
         layout.addStretch()
         return widget
         
-    def _browse_key_file_save(self):
-        """Open save dialog for key file."""
-        path, _ = QFileDialog.getSaveFileName(
-            self, "Save Key File", "", "Key Files (*.key);;All Files (*)"
-        )
-        if path:
-            self._key_file_selector.set_path(Path(path))
+    # Removed _browse_key_file_save since we use directory selector
             
     def _on_encrypt_clicked(self):
         """Handle encrypt button click."""
@@ -403,10 +427,14 @@ class MainWindow(QMainWindow):
             
     def _on_generate_key_clicked(self):
         """Handle generate key button click."""
-        key_file_path = self._key_file_selector.get_path()
-        if not key_file_path:
-            self._show_error("Validation Error", "Please select a location to save the key file.")
+        dir_path = self._key_dir_selector.get_path()
+        name = self._key_name_edit.text().strip()
+        
+        if not dir_path or not name:
+            self._show_error("Validation Error", "Please specify location and file name.")
             return
+            
+        key_file_path = dir_path / f"{name}.key"
             
         if key_file_path.exists():
             reply = QMessageBox.question(
@@ -504,11 +532,37 @@ class MainWindow(QMainWindow):
                 f"{message}\n\n⚠ Keep this key file secure!"
             )
             # Clear form
-            self._key_file_selector.clear()
+            self._key_dir_selector.clear()
+            self._key_name_edit.clear()
         else:
             QMessageBox.critical(self, "Key Generation Failed", message)
             
     def _show_error(self, title: str, message: str):
         """Show error message."""
         QMessageBox.critical(self, title, message)
+
+    def _update_encrypt_btn_state(self):
+        """Update encrypt button state based on fields."""
+        has_file = bool(self._encrypt_file_selector.get_path())
+        has_pw = bool(self._encrypt_password.get_password() and self._encrypt_password.get_password() == self._encrypt_password_confirm.get_password())
+        has_key = bool(self._encrypt_key_file_selector.get_path())
+        self._encrypt_btn.setEnabled(has_file and (has_pw or has_key))
+        
+    def _update_decrypt_btn_state(self):
+        """Update decrypt button state based on fields."""
+        has_file = bool(self._decrypt_file_selector.get_path())
+        has_pw = bool(self._decrypt_password.get_password())
+        has_key = bool(self._decrypt_key_file_selector.get_path())
+        self._decrypt_btn.setEnabled(has_file and (has_pw or has_key))
+        
+    def _update_clean_btn_state(self):
+        """Update clean button state based on fields."""
+        has_file = bool(self._clean_file_selector.get_path())
+        self._clean_btn.setEnabled(has_file)
+        
+    def _update_key_btn_state(self):
+        """Update generate key button state based on fields."""
+        has_dir = bool(self._key_dir_selector.get_path())
+        has_name = bool(self._key_name_edit.text().strip())
+        self._generate_btn.setEnabled(has_dir and has_name)
 

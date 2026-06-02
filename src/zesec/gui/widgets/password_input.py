@@ -3,10 +3,13 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QLineEdit, QLabel, QCheckBox
 )
+from PySide6.QtCore import Signal
 
 
 class PasswordInputWidget(QWidget):
     """Widget for secure password input with show/hide toggle."""
+    
+    text_changed = Signal(str)
     
     def __init__(self, parent=None, label: str = "Password:"):
         """Initialize password input.
@@ -28,6 +31,7 @@ class PasswordInputWidget(QWidget):
         
         self._password_edit = QLineEdit()
         self._password_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        self._password_edit.textChanged.connect(self.text_changed.emit)
         layout.addWidget(self._password_edit)
         
         self._show_password_check = QCheckBox("Show password")

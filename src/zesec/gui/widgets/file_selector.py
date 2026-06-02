@@ -6,10 +6,13 @@ from typing import Optional
 from PySide6.QtWidgets import (
     QWidget, QHBoxLayout, QLineEdit, QPushButton, QFileDialog
 )
+from PySide6.QtCore import Signal
 
 
 class FileSelectorWidget(QWidget):
     """Widget for selecting files with a browse button."""
+    
+    path_changed = Signal(str)
     
     def __init__(self, parent=None, is_directory: bool = False, file_filter: str = "All Files (*)"):
         """Initialize file selector.
@@ -52,7 +55,9 @@ class FileSelectorWidget(QWidget):
             
     def set_path(self, path: Path):
         """Set the selected path."""
-        self._path_edit.setText(str(path))
+        path_str = str(path)
+        self._path_edit.setText(path_str)
+        self.path_changed.emit(path_str)
         
     def get_path(self) -> Optional[Path]:
         """Get the selected path."""
@@ -64,4 +69,5 @@ class FileSelectorWidget(QWidget):
     def clear(self):
         """Clear the selected path."""
         self._path_edit.clear()
+        self.path_changed.emit("")
 

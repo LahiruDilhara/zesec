@@ -75,6 +75,11 @@ class EncryptCommand(BaseCommand):
             if not password:
                 console.print("[red]Password cannot be empty[/red]")
                 return None
+                
+            confirm_password = Prompt.ask("Confirm password", password=True)
+            if password != confirm_password:
+                console.print("[red]Passwords do not match[/red]")
+                return None
             
             # Get encryptor from container
             encryptor = self._container.encryptor()
