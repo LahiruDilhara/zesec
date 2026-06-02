@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Protocol, runtime_checkable
+from typing import Callable, Protocol, runtime_checkable
 
 from ..core.models.encryption_result import EncryptionResult
 
@@ -23,6 +23,7 @@ class IEncryptor(Protocol):
         output_path: Path | None = None,
         clean_original: bool = True,
         key_file_path: Path | None = None,
+        progress_callback: Callable[[int], None] | None = None,
     ) -> EncryptionResult:
         """Encrypt a file.
         
@@ -45,6 +46,7 @@ class IEncryptor(Protocol):
         password: str,
         output_path: Path | None = None,
         key_file_path: Path | None = None,
+        progress_callback: Callable[[int], None] | None = None,
     ) -> EncryptionResult:
         """Decrypt a file.
         
@@ -67,6 +69,7 @@ class IEncryptor(Protocol):
         clean_originals: bool = True,
         recursive: bool = True,
         key_file_path: Path | None = None,
+        progress_callback: Callable[[int], None] | None = None,
     ) -> list[EncryptionResult]:
         """Encrypt all files in a directory.
         

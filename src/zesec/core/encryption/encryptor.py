@@ -2,7 +2,7 @@
 
 import struct
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 from ...config.settings import Settings
 from ...core.models.encryption_result import EncryptionResult
@@ -74,6 +74,7 @@ class EncryptorService:
         output_path: Optional[Path] = None,
         clean_original: bool = True,
         key_file_path: Optional[Path] = None,
+        progress_callback: Optional[Callable[[int], None]] = None,
     ) -> EncryptionResult:
         """Encrypt a file.
         
@@ -89,6 +90,7 @@ class EncryptorService:
         """
         try:
             self._logger.info(f"Starting encryption: {file_path}")
+            if progress_callback: progress_callback(0)
 
             # Validate input
             if not self._file_handler.file_exists(file_path):
@@ -103,6 +105,7 @@ class EncryptorService:
             # Read file
             plaintext = self._file_handler.read_file(file_path)
             file_size = len(plaintext)
+            if progress_callback: progress_callback(20)
 
             # Derive key from password
             password_key, salt = self._key_manager.derive_key_from_password(password)
@@ -116,9 +119,11 @@ class EncryptorService:
 
             # Combine keys (key file + password)
             encryption_key = self._key_manager.combine_keys(key_file, password_key, salt)
+            if progress_callback: progress_callback(40)
 
             # Encrypt data
             ciphertext = self._algorithm.encrypt(plaintext, encryption_key, nonce)
+            if progress_callback: progress_callback(70)
 
             # Build encrypted file format
             has_key_file = key_file is not None
@@ -127,6 +132,7 @@ class EncryptorService:
             # Write encrypted file
             if not self._file_handler.write_file(output_path, encrypted_data):
                 raise EncryptionError(f"Failed to write encrypted file: {output_path}")
+            if progress_callback: progress_callback(90)
 
             # Clean original file if requested
             if clean_original and self._cleaner:
@@ -134,6 +140,7 @@ class EncryptorService:
                 if not self._cleaner.clean_file(file_path):
                     self._logger.warning(f"Failed to clean original file: {file_path}")
 
+            if progress_callback: progress_callback(100)
             self._logger.success(f"Encryption completed: {output_path}")
 
             return EncryptionResult(
@@ -157,6 +164,7 @@ class EncryptorService:
         password: str,
         output_path: Optional[Path] = None,
         key_file_path: Optional[Path] = None,
+        progress_callback: Optional[Callable[[int], None]] = None,
     ) -> EncryptionResult:
         """Decrypt a file.
         
@@ -171,6 +179,7 @@ class EncryptorService:
         """
         try:
             self._logger.info(f"Starting decryption: {file_path}")
+            if progress_callback: progress_callback(0)
 
             # Validate input
             if not self._file_handler.file_exists(file_path):
@@ -178,6 +187,7 @@ class EncryptorService:
 
             # Read encrypted file
             encrypted_data = self._file_handler.read_file(file_path)
+            if progress_callback: progress_callback(20)
 
             # Parse file format
             salt, nonce, ciphertext, has_key_file = self._parse_encrypted_file(encrypted_data)
@@ -202,10 +212,12 @@ class EncryptorService:
 
             # Combine keys (same as encryption)
             decryption_key = self._key_manager.combine_keys(key_file, password_key, salt)
+            if progress_callback: progress_callback(40)
 
             # Decrypt data
             plaintext = self._algorithm.decrypt(ciphertext, decryption_key, nonce)
             file_size = len(plaintext)
+            if progress_callback: progress_callback(70)
 
             # Determine output path
             if output_path is None:
@@ -217,6 +229,7 @@ class EncryptorService:
             if not self._file_handler.write_file(output_path, plaintext):
                 raise DecryptionError(f"Failed to write decrypted file: {output_path}")
 
+            if progress_callback: progress_callback(100)
             self._logger.success(f"Decryption completed: {output_path}")
 
             return EncryptionResult(
@@ -241,6 +254,7 @@ class EncryptorService:
         clean_originals: bool = True,
         recursive: bool = True,
         key_file_path: Optional[Path] = None,
+        progress_callback: Optional[Callable[[int], None]] = None,
     ) -> list[EncryptionResult]:
         """Encrypt all files in a directory.
         
@@ -272,6 +286,7 @@ class EncryptorService:
                 password,
                 clean_original=clean_originals,
                 key_file_path=key_file_path,
+                progress_callback=progress_callback,
             )
             results.append(result)
 

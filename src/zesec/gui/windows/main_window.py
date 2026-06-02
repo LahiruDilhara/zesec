@@ -5,7 +5,7 @@ from typing import Optional
 
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QLabel, QFileDialog, QMessageBox,
+    QLabel, QFileDialog, QMessageBox,
     QTabWidget, QCheckBox, QProgressBar, QGroupBox,
     QFormLayout, QLineEdit
 )
@@ -21,6 +21,7 @@ from ..controllers.key_controller import KeyController
 from ..widgets.file_selector import FileSelectorWidget
 from ..widgets.multi_file_selector import MultiFileSelectorWidget
 from ..widgets.password_input import PasswordInputWidget
+from ..widgets.hover_button import HoverButton
 
 
 class MainWindow(QMainWindow):
@@ -180,8 +181,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._encrypt_progress)
         
         # Encrypt button
-        self._encrypt_btn = QPushButton("Encrypt File")
-        self._encrypt_btn.setStyleSheet("font-weight: bold; padding: 8px;")
+        self._encrypt_btn = HoverButton("Encrypt File")
         self._encrypt_btn.clicked.connect(self._on_encrypt_clicked)
         self._encrypt_btn.setEnabled(False)
         layout.addWidget(self._encrypt_btn)
@@ -227,8 +227,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._decrypt_progress)
         
         # Decrypt button
-        self._decrypt_btn = QPushButton("Decrypt File")
-        self._decrypt_btn.setStyleSheet("font-weight: bold; padding: 8px;")
+        self._decrypt_btn = HoverButton("Decrypt File")
         self._decrypt_btn.clicked.connect(self._on_decrypt_clicked)
         self._decrypt_btn.setEnabled(False)
         layout.addWidget(self._decrypt_btn)
@@ -250,10 +249,10 @@ class MainWindow(QMainWindow):
         # File selection group
         file_group = QGroupBox("File Selection")
         file_layout = QVBoxLayout()
-        self._clean_file_selector = FileSelectorWidget()
+        self._clean_file_selector = MultiFileSelectorWidget()
         file_layout.addWidget(self._clean_file_selector)
         file_group.setLayout(file_layout)
-        layout.addWidget(file_group)
+        layout.addWidget(file_group, 1)
         
         # Options
         options_group = QGroupBox("Options")
@@ -279,14 +278,13 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._clean_progress)
         
         # Clean button
-        self._clean_btn = QPushButton("Clean File")
-        self._clean_btn.setStyleSheet("font-weight: bold; padding: 8px; background-color: #d32f2f; color: white;")
+        self._clean_btn = HoverButton("Clean File")
         self._clean_btn.clicked.connect(self._on_clean_clicked)
         self._clean_btn.setEnabled(False)
         layout.addWidget(self._clean_btn)
         
         # Connect signals
-        self._clean_file_selector.path_changed.connect(lambda _: self._update_clean_btn_state())
+        self._clean_file_selector.paths_changed.connect(lambda _: self._update_clean_btn_state())
         
         layout.addStretch()
         return widget
@@ -339,8 +337,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._key_progress)
         
         # Generate button
-        self._generate_btn = QPushButton("Generate Key File")
-        self._generate_btn.setStyleSheet("font-weight: bold; padding: 8px;")
+        self._generate_btn = HoverButton("Generate Key File")
         self._generate_btn.clicked.connect(self._on_generate_key_clicked)
         self._generate_btn.setEnabled(False)
         layout.addWidget(self._generate_btn)
@@ -401,7 +398,7 @@ class MainWindow(QMainWindow):
             return
             
         next_file = self._encryption_queue.pop(0)
-        self._encrypt_progress.setValue(0)
+        self._current_encrypt_file = next_file
         
         password = self._encrypt_password.get_password()
         key_file_path = self._encrypt_key_file_selector.get_path()
@@ -455,7 +452,7 @@ class MainWindow(QMainWindow):
             return
             
         next_file = self._decryption_queue.pop(0)
-        self._decrypt_progress.setValue(0)
+        self._current_decrypt_file = next_file
         
         password = self._decrypt_password.get_password()
         key_file_path = self._decrypt_key_file_selector.get_path()
@@ -468,30 +465,53 @@ class MainWindow(QMainWindow):
         
     def _on_clean_clicked(self):
         """Handle clean button click."""
-        file_path = self._clean_file_selector.get_path()
-        if not file_path:
-            self._show_error("Validation Error", "Please select a file to clean.")
+        paths = self._clean_file_selector.get_paths()
+        if not paths:
+            self._show_error("Validation Error", "Please select at least one file to clean.")
             return
             
         # Confirm action
         reply = QMessageBox.question(
             self,
             "Confirm Cleaning",
-            "Are you sure you want to securely clean this file?\n\n"
+            f"Are you sure you want to securely clean {len(paths)} file(s)?\n\n"
             "This will permanently overwrite the file content and cannot be undone!",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
         )
         
         if reply == QMessageBox.Yes:
-            delete = self._clean_delete.isChecked()
-            
-            # Show progress
+            # Disable button
+            self._clean_btn.setEnabled(False)
             self._clean_progress.setVisible(True)
-            self._clean_progress.setValue(0)
             
-            # Start cleaning
-            self._clean_controller.clean_file(file_path, delete)
+            self._cleaning_queue = paths.copy()
+            self._cleaning_results = []
+            self._process_next_cleaning()
+            
+    def _process_next_cleaning(self):
+        """Process the next file in the cleaning queue."""
+        if not self._cleaning_queue:
+            self._clean_progress.setVisible(False)
+            successes = [r for r in self._cleaning_results if r[0]]
+            failures = [r for r in self._cleaning_results if not r[0]]
+            
+            msg = f"Batch cleaning finished.\n\nSuccessfully cleaned: {len(successes)}\nFailed: {len(failures)}"
+            if failures:
+                msg += "\n\nFirst error:\n" + failures[0][1]
+                
+            QMessageBox.information(self, "Batch Cleaning", msg)
+            
+            # Clear form
+            self._clean_file_selector.clear()
+            self._update_clean_btn_state()
+            return
+            
+        next_file = self._cleaning_queue.pop(0)
+        self._current_clean_file = next_file
+        
+        delete = self._clean_delete.isChecked()
+        self._clean_controller.clean_file(next_file, delete)
             
     def _on_generate_key_clicked(self):
         """Handle generate key button click."""
@@ -525,11 +545,37 @@ class MainWindow(QMainWindow):
     def _update_progress(self, operation: str, value: int):
         """Update progress bar for an operation."""
         if operation == "encrypt":
-            self._encrypt_progress.setValue(value)
+            if hasattr(self, '_current_encrypt_file'):
+                self._encrypt_file_selector.update_file_progress(self._current_encrypt_file, value)
+            
+            # Calculate total progress
+            total_files = len(self._encryption_results) + len(self._encryption_queue) + 1
+            if total_files > 0:
+                completed_files = len(self._encryption_results)
+                total_progress = int(((completed_files * 100) + value) / total_files)
+                self._encrypt_progress.setValue(total_progress)
+                
         elif operation == "decrypt":
-            self._decrypt_progress.setValue(value)
+            if hasattr(self, '_current_decrypt_file'):
+                self._decrypt_file_selector.update_file_progress(self._current_decrypt_file, value)
+                
+            # Calculate total progress
+            total_files = len(self._decryption_results) + len(self._decryption_queue) + 1
+            if total_files > 0:
+                completed_files = len(self._decryption_results)
+                total_progress = int(((completed_files * 100) + value) / total_files)
+                self._decrypt_progress.setValue(total_progress)
+                
         elif operation == "clean":
-            self._clean_progress.setValue(value)
+            if hasattr(self, '_current_clean_file'):
+                self._clean_file_selector.update_file_progress(self._current_clean_file, value)
+                
+            # Calculate total progress
+            total_files = len(self._cleaning_results) + len(self._cleaning_queue) + 1
+            if total_files > 0:
+                completed_files = len(self._cleaning_results)
+                total_progress = int(((completed_files * 100) + value) / total_files)
+                self._clean_progress.setValue(total_progress)
         elif operation == "key":
             self._key_progress.setValue(value)
             
@@ -545,14 +591,10 @@ class MainWindow(QMainWindow):
             
     def _on_clean_completed(self, success: bool, message: str):
         """Handle cleaning completion."""
-        self._clean_progress.setVisible(False)
-        
-        if success:
-            QMessageBox.information(self, "Cleaning Successful", message)
-            # Clear form
-            self._clean_file_selector.clear()
-        else:
-            QMessageBox.critical(self, "Cleaning Failed", message)
+        if not hasattr(self, '_cleaning_results'):
+            self._cleaning_results = []
+        self._cleaning_results.append((success, message))
+        self._process_next_cleaning()
             
     def _on_key_completed(self, success: bool, message: str):
         """Handle key generation completion."""
@@ -590,7 +632,7 @@ class MainWindow(QMainWindow):
         
     def _update_clean_btn_state(self):
         """Update clean button state based on fields."""
-        has_file = bool(self._clean_file_selector.get_path())
+        has_file = len(self._clean_file_selector.get_paths()) > 0
         self._clean_btn.setEnabled(has_file)
         
     def _update_key_btn_state(self):

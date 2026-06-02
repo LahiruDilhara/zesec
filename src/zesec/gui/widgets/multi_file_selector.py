@@ -4,10 +4,68 @@ from pathlib import Path
 from typing import List
 
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog,
-    QListWidget, QListWidgetItem, QLabel, QStackedWidget
+    QWidget, QVBoxLayout, QHBoxLayout, QFileDialog,
+    QListWidget, QListWidgetItem, QLabel, QStackedWidget, QProgressBar
 )
-from PySide6.QtCore import Qt, Signal
+from .hover_button import HoverButton
+from PySide6.QtCore import Qt, Signal, QSize
+
+class FileItemWidget(QWidget):
+    """Custom widget for a file item in the list."""
+    
+    delete_clicked = Signal(Path)
+    
+    def __init__(self, path: Path, parent=None):
+        super().__init__(parent)
+        self.path = path
+        self._init_ui()
+        
+    def _init_ui(self):
+        self.setMinimumHeight(40)
+        self.setStyleSheet("FileItemWidget { background: transparent; }")
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(5, 5, 5, 5)
+        
+        # Circle indicator
+        self.status_circle = QLabel()
+        self.status_circle.setFixedSize(12, 12)
+        self._set_circle_color("#bdc3c7") # Grey initially
+        layout.addWidget(self.status_circle, 0)
+        
+        self.name_label = QLabel(self.path.name)
+        self.name_label.setToolTip(str(self.path))
+        self.name_label.setStyleSheet("background: transparent;")
+        layout.addWidget(self.name_label, 2)
+        
+        self.progress = QProgressBar()
+        self.progress.setFixedHeight(12)
+        self.progress.setTextVisible(True)
+        self.progress.setFormat("%p%")
+        self.progress.setValue(0)
+        self.progress.setStyleSheet(
+            "QProgressBar::chunk { background-color: #2ecc71; border-radius: 4px; } "
+            "QProgressBar { border: 1px solid #ced4da; border-radius: 4px; text-align: center; font-size: 9px; color: #333333; }"
+        )
+        self.progress.setVisible(False)
+        layout.addWidget(self.progress, 3)
+        
+        self.delete_btn = HoverButton("Remove", base_color="#e74c3c")
+        self.delete_btn.set_padding("2px 10px")
+        self.delete_btn.clicked.connect(lambda: self.delete_clicked.emit(self.path))
+        layout.addWidget(self.delete_btn, 0)
+        
+    def _set_circle_color(self, color: str):
+        self.status_circle.setStyleSheet(f"background-color: {color}; border-radius: 6px;")
+        
+    def update_progress(self, value: int):
+        self.progress.setValue(value)
+        if value < 100:
+            if not self.progress.isVisible():
+                self.progress.setVisible(True)
+                self._set_circle_color("#f39c12") # Orange while processing
+        else:
+            self.progress.setVisible(False)
+            self._set_circle_color("#2ecc71") # Green when finished
 
 
 class MultiFileSelectorWidget(QWidget):
@@ -34,14 +92,10 @@ class MultiFileSelectorWidget(QWidget):
         
         # Buttons layout
         btn_layout = QHBoxLayout()
-        self._add_btn = QPushButton("Add Files...")
+        self._add_btn = HoverButton("Add Files...")
         self._add_btn.clicked.connect(self._add_files)
         
-        self._remove_btn = QPushButton("Remove Selected")
-        self._remove_btn.clicked.connect(self._remove_selected)
-        
         btn_layout.addWidget(self._add_btn)
-        btn_layout.addWidget(self._remove_btn)
         btn_layout.addStretch()
         layout.addLayout(btn_layout)
         
@@ -79,34 +133,34 @@ class MultiFileSelectorWidget(QWidget):
                 self._paths.append(path)
                 
                 # Add to list widget
-                item = QListWidgetItem(path.name)
-                item.setToolTip(str(path))
+                item = QListWidgetItem()
                 item.setData(Qt.UserRole, path)
-                item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-                item.setCheckState(Qt.Unchecked)
                 self._list_widget.addItem(item)
+                
+                widget = FileItemWidget(path)
+                widget.delete_clicked.connect(self._remove_item)
+                item.setSizeHint(QSize(0, 45))
+                self._list_widget.setItemWidget(item, widget)
+                
                 added = True
                 
         if added:
             self._update_ui_state()
             self.paths_changed.emit(self.get_paths())
             
-    def _remove_selected(self):
-        """Remove checked items from the list."""
-        removed = False
-        # Iterate backwards to safely remove items
-        for i in range(self._list_widget.count() - 1, -1, -1):
+    def _remove_item(self, path: Path):
+        """Remove an item from the list by path."""
+        if path in self._paths:
+            self._paths.remove(path)
+            
+        for i in range(self._list_widget.count()):
             item = self._list_widget.item(i)
-            if item.checkState() == Qt.Checked:
-                path = item.data(Qt.UserRole)
-                if path in self._paths:
-                    self._paths.remove(path)
+            if item.data(Qt.UserRole) == path:
                 self._list_widget.takeItem(i)
-                removed = True
+                break
                 
-        if removed:
-            self._update_ui_state()
-            self.paths_changed.emit(self.get_paths())
+        self._update_ui_state()
+        self.paths_changed.emit(self.get_paths())
             
     def _update_ui_state(self):
         """Update visibility of stacked widget pages."""
@@ -125,3 +179,13 @@ class MultiFileSelectorWidget(QWidget):
         self._list_widget.clear()
         self._update_ui_state()
         self.paths_changed.emit([])
+
+    def update_file_progress(self, path: Path, value: int):
+        """Update progress for a specific file."""
+        for i in range(self._list_widget.count()):
+            item = self._list_widget.item(i)
+            if item.data(Qt.UserRole) == path:
+                widget = self._list_widget.itemWidget(item)
+                if isinstance(widget, FileItemWidget):
+                    widget.update_progress(value)
+                break

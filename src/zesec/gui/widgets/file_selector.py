@@ -4,8 +4,9 @@ from pathlib import Path
 from typing import Optional
 
 from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QLineEdit, QPushButton, QFileDialog
+    QWidget, QHBoxLayout, QLineEdit, QFileDialog
 )
+from .hover_button import HoverButton
 from PySide6.QtCore import Signal
 
 
@@ -37,7 +38,7 @@ class FileSelectorWidget(QWidget):
         self._path_edit.setReadOnly(True)
         layout.addWidget(self._path_edit)
         
-        self._browse_btn = QPushButton("Browse...")
+        self._browse_btn = HoverButton("Browse...")
         self._browse_btn.clicked.connect(self._browse_file)
         layout.addWidget(self._browse_btn)
         
