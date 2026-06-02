@@ -156,7 +156,8 @@ class MainWindow(QMainWindow):
         self._encrypt_password = PasswordInputWidget(label="Password:")
         layout.addWidget(self._encrypt_password)
         
-        self._encrypt_password_confirm = PasswordInputWidget(label="Confirm Password:")
+        self._encrypt_password_confirm = PasswordInputWidget(label="Confirm Password:", is_confirm=True)
+        self._encrypt_password_confirm.set_match_target(self._encrypt_password)
         layout.addWidget(self._encrypt_password_confirm)
         
         # Key file selection (optional)
@@ -171,6 +172,7 @@ class MainWindow(QMainWindow):
         options_group = QGroupBox("Options")
         options_layout = QVBoxLayout()
         self._encrypt_clean_original = QCheckBox("Securely clean original file after encryption")
+        self._encrypt_clean_original.setCursor(Qt.PointingHandCursor)
         self._encrypt_clean_original.setChecked(True)
         options_layout.addWidget(self._encrypt_clean_original)
         options_group.setLayout(options_layout)
@@ -257,6 +259,7 @@ class MainWindow(QMainWindow):
         options_group = QGroupBox("Options")
         options_layout = QVBoxLayout()
         self._clean_delete = QCheckBox("Delete file after cleaning")
+        self._clean_delete.setCursor(Qt.PointingHandCursor)
         self._clean_delete.setChecked(True)
         options_layout.addWidget(self._clean_delete)
         options_group.setLayout(options_layout)

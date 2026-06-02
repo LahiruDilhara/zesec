@@ -39,7 +39,18 @@ def main() -> int:
     if style_path.exists():
         try:
             with open(style_path, "r", encoding="utf-8") as f:
-                app.setStyleSheet(f.read())
+                stylesheet = f.read()
+                
+            # Fix SVG paths to be absolute for QSS
+            if getattr(sys, 'frozen', False):
+                base_dir = Path(sys._MEIPASS)
+            else:
+                base_dir = Path(__file__).parent.parent.parent.parent
+                
+            base_dir_str = base_dir.as_posix()
+            stylesheet = stylesheet.replace("url(public/svg/", f"url({base_dir_str}/public/svg/")
+            
+            app.setStyleSheet(stylesheet)
         except Exception as e:
             logger.warning(f"Failed to load stylesheet: {e}")
     

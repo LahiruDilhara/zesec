@@ -7,8 +7,10 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFileDialog,
     QListWidget, QListWidgetItem, QLabel, QStackedWidget, QProgressBar
 )
+from PySide6.QtGui import QIcon
 from .hover_button import HoverButton
 from PySide6.QtCore import Qt, Signal, QSize
+import sys
 
 class FileItemWidget(QWidget):
     """Custom widget for a file item in the list."""
@@ -19,6 +21,14 @@ class FileItemWidget(QWidget):
         super().__init__(parent)
         self.path = path
         self._init_ui()
+        
+    def _get_svg_path(self, filename: str) -> str:
+        """Get the absolute path to an SVG asset."""
+        if getattr(sys, 'frozen', False):
+            base_dir = Path(sys._MEIPASS)
+        else:
+            base_dir = Path(__file__).parent.parent.parent.parent.parent
+        return str(base_dir / "public" / "svg" / filename)
         
     def _init_ui(self):
         self.setMinimumHeight(40)
@@ -40,7 +50,7 @@ class FileItemWidget(QWidget):
         
         self.name_label = QLabel(self.path.name)
         self.name_label.setToolTip(str(self.path))
-        self.name_label.setStyleSheet("background: transparent;")
+        self.name_label.setStyleSheet("background: transparent; margin-left: 10px;")
         layout.addWidget(self.name_label, 2)
         
         self.progress = QProgressBar()
@@ -55,8 +65,13 @@ class FileItemWidget(QWidget):
         self.progress.setVisible(False)
         layout.addWidget(self.progress, 3)
         
-        self.delete_btn = HoverButton("Remove", base_color="#e74c3c")
-        self.delete_btn.set_padding("2px 10px")
+        bin_svg_path = self._get_svg_path("bin.svg")
+        
+        self.delete_btn = HoverButton("", base_color="#e74c3c")
+        self.delete_btn.setIcon(QIcon(bin_svg_path))
+        self.delete_btn.setIconSize(QSize(18, 18))
+        self.delete_btn.setFixedSize(30, 30)
+        self.delete_btn.set_padding("0px")
         self.delete_btn.clicked.connect(lambda: self.delete_clicked.emit(self.path))
         layout.addWidget(self.delete_btn, 0)
         
@@ -104,7 +119,11 @@ class MultiFileSelectorWidget(QWidget):
         self._add_btn = HoverButton("Add Files...")
         self._add_btn.clicked.connect(self._add_files)
         
+        self._clear_btn = HoverButton("Clear All", base_color="#95a5a6")
+        self._clear_btn.clicked.connect(self.clear)
+        
         btn_layout.addWidget(self._add_btn)
+        btn_layout.addWidget(self._clear_btn)
         btn_layout.addStretch()
         layout.addLayout(btn_layout)
         

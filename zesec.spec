@@ -60,6 +60,7 @@ hidden_imports += collect_submodules("zesec.console.commands")
 # PyInstaller will automatically bundle Python modules from the pathex
 datas = [
     ('src/zesec/gui/style.qss', 'zesec/gui'),
+    ('public/svg/*', 'public/svg'),
 ]
 
 # Analysis for console executable
