@@ -62,7 +62,7 @@ jobs:
         with: 
           python-version: '3.13'
           cache: 'pip'
-          architecture: ${{ matrix.arch == 'x86' && 'x86' || 'x64' }}
+          architecture: ${{ matrix.arch == 'x86' && 'x86' || matrix.arch == 'arm64' && 'arm64' || 'x64' }}
 
       - name: Cache ccache
         uses: actions/cache@v4
