@@ -16,7 +16,7 @@ license: "MIT"
 contents:
   - src: "../../main.dist"
     dst: "/opt/zesec"
-  - src: "/opt/zesec/main.dist/zesec"
+  - src: "/opt/zesec/main.dist/zesec-bin"
     dst: "/usr/local/bin/zesec"
     type: "symlink"
   - src: "./com.lahirudilhara.zesec.desktop"
