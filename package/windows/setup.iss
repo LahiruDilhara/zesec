@@ -23,3 +23,6 @@ Name: "{autodesktop}\Zesec"; Filename: "{app}\zesec.exe"; Parameters: "--gui"; T
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+[Run]
+Filename: "{app}\zesec.exe"; Parameters: "--gui"; Description: "Launch Zesec"; Flags: nowait postinstall skipifsilent
