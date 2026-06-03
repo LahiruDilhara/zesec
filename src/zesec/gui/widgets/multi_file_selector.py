@@ -7,7 +7,8 @@ from typing import List
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFileDialog,
-    QListWidget, QListWidgetItem, QLabel, QStackedWidget, QProgressBar
+    QListWidget, QListWidgetItem, QLabel, QStackedWidget, QProgressBar,
+    QPushButton
 )
 from PySide6.QtGui import QIcon
 from .hover_button import HoverButton
@@ -49,7 +50,6 @@ class FileItemWidget(QWidget):
         layout.addWidget(self.status_circle, 0)
         
         self.name_label = QLabel(self.path.name)
-        self.name_label.setToolTip(str(self.path))
         self.name_label.setStyleSheet("background: transparent; margin-left: 10px;")
         layout.addWidget(self.name_label, 2)
         
@@ -67,11 +67,14 @@ class FileItemWidget(QWidget):
         
         bin_svg_path = self._get_svg_path("bin.svg")
         
-        self.delete_btn = HoverButton("", base_color="#e74c3c")
+        self.delete_btn = QPushButton("")
         self.delete_btn.setIcon(QIcon(bin_svg_path))
         self.delete_btn.setIconSize(QSize(18, 18))
         self.delete_btn.setFixedSize(30, 30)
-        self.delete_btn.set_padding("0px")
+        self.delete_btn.setStyleSheet(
+            "QPushButton { background: transparent; border: none; }"
+            "QPushButton:hover { background: rgba(0, 0, 0, 10%); border-radius: 4px; }"
+        )
         self.delete_btn.clicked.connect(lambda: self.delete_clicked.emit(self.path))
         layout.addWidget(self.delete_btn, 0)
         
