@@ -41,7 +41,7 @@ Set-Content -Path $wixFile -Value @"
       <Directory Id='$progFilesId' Name='PFiles'>
         <Directory Id='INSTALLDIR' Name='Zesec'>
           <Component Id='MainExecutable' Guid='*' $win64Attr>
-            <File Id='ZesecEXE' Name='main.exe' DiskId='1' Source='main.dist\main.exe' KeyPath='yes'/>
+            <File Id='ZesecEXE' Name='main.exe' DiskId='1' Source='main.exe' KeyPath='yes'/>
           </Component>
         </Directory>
       </Directory>

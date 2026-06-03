@@ -15,7 +15,7 @@ ArchitecturesInstallIn64BitMode=x64
 #endif
 
 [Files]
-Source: "..\..\main.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\main.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\Zesec"; Filename: "{app}\main.exe"; Parameters: "--gui"
