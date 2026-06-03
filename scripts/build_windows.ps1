@@ -47,7 +47,7 @@ Set-Content -Path $wixFile -Value @"
           </Component>
           <Component Id='GUIExecutable' Guid='*' $win64Attr>
             <File Id='ZesecGUIEXE' Name='zesec-gui.exe' DiskId='1' Source='build\zesec-gui.exe' KeyPath='yes'/>
-            <ProgId Id='Zesec.Document' Description='Zesec Encrypted File' Icon='icon.ico'>
+            <ProgId Id='Zesec.Document' Description='Zesec Encrypted File' Icon='ZesecGUIEXE'>
               <Extension Id='zesec' ContentType='application/x-zesec'>
                 <Verb Id='open' Command='Open' TargetFile='ZesecGUIEXE' Argument='--gui &quot;%1&quot;' />
               </Extension>
