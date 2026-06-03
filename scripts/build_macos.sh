@@ -59,6 +59,12 @@ EOF
         --app-drop-link 400 190 \
         "dist/Zesec_${VERSION}_macOS_${ARCH}.dmg" "$APP_DIR" || true
 else
-    # Fallback if no .app
-    tar -czvf "dist/Zesec_${VERSION}_macOS_${ARCH}.tar.gz" -C build zesec
+    EXEC_FILE=$(find build -maxdepth 1 -type f -name "zesec*" | head -n 1)
+    if [ -n "$EXEC_FILE" ]; then
+        EXEC_BASENAME=$(basename "$EXEC_FILE")
+        tar -czvf "dist/Zesec_${VERSION}_macOS_${ARCH}.tar.gz" -C build "$EXEC_BASENAME"
+    else
+        echo "Error: zesec binary not found in build/"
+        exit 1
+    fi
 fi

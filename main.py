@@ -76,12 +76,14 @@ def main() -> int:
     args, unknown = parser.parse_known_args()
     
     if args.gui:
-        # Hide console window if running on Windows
+        # On Windows, spawn a detached process for the GUI to unblock the terminal
         if sys.platform == "win32":
-            import ctypes
-            hwnd = ctypes.windll.kernel32.GetConsoleWindow()
-            if hwnd:
-                ctypes.windll.user32.ShowWindow(hwnd, 0)
+            import subprocess
+            if not os.environ.get("ZESEC_GUI_DETACHED"):
+                os.environ["ZESEC_GUI_DETACHED"] = "1"
+                # DETACHED_PROCESS = 0x00000008
+                subprocess.Popen([sys.executable] + sys.argv[1:], creationflags=0x00000008)
+                sys.exit(0)
                 
         # Import and run GUI
         try:
