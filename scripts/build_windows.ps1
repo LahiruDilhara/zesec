@@ -34,14 +34,14 @@ Set-Content -Path $wixFile -Value @"
     <Media Id='1' Cabinet='Zesec.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1' />
     <Property Id='DiskPrompt' Value='Zesec Installation [1]' />
     
-    <Icon Id="icon.ico" SourceFile="assets\icon\icon.ico"/>
+    <Icon Id="icon.ico" SourceFile="..\..\assets\icon\icon.ico"/>
     <Property Id="ARPPRODUCTICON" Value="icon.ico" />
     
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='$progFilesId' Name='PFiles'>
         <Directory Id='INSTALLDIR' Name='Zesec'>
           <Component Id='MainExecutable' Guid='*' $win64Attr>
-            <File Id='ZesecEXE' Name='main.exe' DiskId='1' Source='main.dist\main.exe' KeyPath='yes'/>
+            <File Id='ZesecEXE' Name='main.exe' DiskId='1' Source='..\..\main.dist\main.exe' KeyPath='yes'/>
           </Component>
         </Directory>
       </Directory>
