@@ -59,5 +59,5 @@ EOF
         "dist/Zesec_${VERSION}_macOS_${ARCH}.dmg" "$APP_DIR" || true
 else
     # Fallback if no .app
-    tar -czvf "dist/Zesec_${VERSION}_macOS_${ARCH}.tar.gz" main.dist Zesec.bin
+    tar -czvf "dist/Zesec_${VERSION}_macOS_${ARCH}.tar.gz" main.dist main.bin
 fi
