@@ -81,6 +81,7 @@ jobs:
       - name: Build with Nuitka
         env:
           CCACHE_DIR: ~/.ccache
+        shell: bash
         run: |
           VERSION="${{ needs.validate-tag.outputs.version }}"
           # Fallback to 1.0.0 if not provided just for building
