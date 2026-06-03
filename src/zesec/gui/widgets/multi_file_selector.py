@@ -35,15 +35,29 @@ class FileItemWidget(QWidget):
         return str(get_asset_path(f"svg/{filename}"))
         
     def _init_ui(self):
-        self.setMinimumHeight(40)
-        self.setStyleSheet("FileItemWidget { background: transparent; }")
+        self.setMinimumHeight(44)
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setStyleSheet("""
+            FileItemWidget { 
+                background: rgba(127, 140, 141, 0.05); 
+                border-radius: 6px; 
+                border: 1px solid rgba(127, 140, 141, 0.1);
+            }
+            FileItemWidget:hover {
+                background: rgba(127, 140, 141, 0.1);
+            }
+            QLabel { background: transparent; border: none; }
+        """)
+        
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(10, 5, 10, 5)
+        layout.setContentsMargins(15, 8, 15, 8)
         layout.setSpacing(15)  # Global spacing between elements
+        layout.setAlignment(Qt.AlignVCenter)
         
         # Number indicator
         self.number_label = QLabel("1.")
-        self.number_label.setStyleSheet("background: transparent; font-weight: bold; color: #7f8c8d;")
+        self.number_label.setAlignment(Qt.AlignVCenter)
+        self.number_label.setStyleSheet("font-weight: bold; color: #7f8c8d; font-size: 13px;")
         self.number_label.setFixedWidth(25)
         layout.addWidget(self.number_label, 0)
         
@@ -64,8 +78,8 @@ class FileItemWidget(QWidget):
         layout.addWidget(self.logo_label, 0)
         
         self.name_label = QLabel(self.path.name)
-        self.name_label.setStyleSheet("background: transparent;")
-        self.name_label.setToolTip(self.path.name)
+        self.name_label.setAlignment(Qt.AlignVCenter)
+        self.name_label.setStyleSheet("color: #2c3e50; font-size: 13px; font-weight: 500;")
         self.name_label.setMinimumWidth(100)
         layout.addWidget(self.name_label, 1) # 1 stretch factor
         
@@ -200,6 +214,9 @@ class MultiFileSelectorWidget(QWidget):
         
         # Page 1: List widget
         self._list_widget = QListWidget()
+        self._list_widget.setSelectionMode(QListWidget.NoSelection)
+        self._list_widget.setStyleSheet("QListWidget { border: none; background: transparent; outline: none; } QListWidget::item { border: none; outline: none; }")
+        self._list_widget.setSpacing(5) # Give spacing between rows
         self._stack.addWidget(self._list_widget)
         
         layout.addWidget(self._stack)
