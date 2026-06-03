@@ -67,5 +67,5 @@ Set-Content -Path $wixFile -Value @"
 </Wix>
 "@
 
-& "C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe" $wixFile -out package\windows\setup.wixobj
-& "C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe" -ext WixUIExtension package\windows\setup.wixobj -out "dist\Zesec_${VERSION}_Windows_${ARCH}_Setup.msi"
+& candle.exe $wixFile -out package\windows\setup.wixobj
+& light.exe -ext WixUIExtension package\windows\setup.wixobj -out "dist\Zesec_${VERSION}_Windows_${ARCH}_Setup.msi"
