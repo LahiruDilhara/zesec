@@ -82,7 +82,14 @@ def main() -> int:
             if not os.environ.get("ZESEC_GUI_DETACHED"):
                 os.environ["ZESEC_GUI_DETACHED"] = "1"
                 # DETACHED_PROCESS = 0x00000008
-                subprocess.Popen([sys.executable] + sys.argv[1:], creationflags=0x00000008)
+                subprocess.Popen(
+                    [sys.executable] + sys.argv[1:], 
+                    creationflags=0x00000008,
+                    close_fds=True,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
                 sys.exit(0)
                 
         # Import and run GUI
