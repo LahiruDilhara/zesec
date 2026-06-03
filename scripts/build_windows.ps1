@@ -71,6 +71,7 @@ Set-Content -Path $wixFile -Value @"
     </Feature>
     
     <!-- UI Configuration -->
+    <WixVariable Id="WixUILicenseRtf" Value="package\windows\license.rtf" />
     <Property Id='WIXUI_INSTALLDIR' Value='INSTALLDIR' />
     <UIRef Id='WixUI_InstallDir' />
     <Property Id='WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT' Value='Launch Zesec' />
