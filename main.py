@@ -25,7 +25,6 @@ Main entry point for the application.
 
 # 4. Windows-Specific UX
 # nuitka-project-if: {OS} == "Windows":
-#    nuitka-project: --windows-console-mode=disable
 #    nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/assets/icon/icon.ico
 
 # 5. macOS-Specific UX
@@ -63,20 +62,6 @@ except ImportError as e:
     sys.exit(1)
 
 
-def _attach_windows_console():
-    """Dynamically attach to the parent console to restore CLI output on Windows."""
-    if sys.platform == "win32":
-        ATTACH_PARENT_PROCESS = -1
-        if ctypes.windll.kernel32.AttachConsole(ATTACH_PARENT_PROCESS):
-            import msvcrt
-            stdout_fd = os.open("CONOUT$", os.O_RDWR | os.O_TEXT)
-            os.dup2(stdout_fd, 1)
-            sys.stdout = open(1, "w", encoding="utf-8", buffering=1)
-            
-            stderr_fd = os.open("CONOUT$", os.O_RDWR | os.O_TEXT)
-            os.dup2(stderr_fd, 2)
-            sys.stderr = open(2, "w", encoding="utf-8", buffering=1)
-
 def main() -> int:
     """Main entry point that routes to console or GUI mode."""
     parser = argparse.ArgumentParser(
@@ -91,6 +76,13 @@ def main() -> int:
     args, unknown = parser.parse_known_args()
     
     if args.gui:
+        # Hide console window if running on Windows
+        if sys.platform == "win32":
+            import ctypes
+            hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+            if hwnd:
+                ctypes.windll.user32.ShowWindow(hwnd, 0)
+                
         # Import and run GUI
         try:
             from zesec.gui import main as gui_main
@@ -101,7 +93,6 @@ def main() -> int:
             return 1
     else:
         # Run console mode
-        _attach_windows_console()
         return console_main()
 
 
