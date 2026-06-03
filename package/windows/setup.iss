@@ -1,0 +1,25 @@
+[Setup]
+AppId={{B5A31E7D-6C8E-4B07-9E1D-05F20E67142A}
+AppName=Zesec
+AppVersion={#MyAppVersion}
+DefaultDirName={autopf}\Zesec
+DefaultGroupName=Zesec
+OutputDir=..\..\dist
+OutputBaseFilename=ZesecSetup
+SetupIconFile=..\..\assets\icon\icon.ico
+Compression=lzma2
+SolidCompression=yes
+#if Arch == "x64"
+ArchitecturesAllowed=x64
+ArchitecturesInstallIn64BitMode=x64
+#endif
+
+[Files]
+Source: "..\..\main.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[Icons]
+Name: "{group}\Zesec"; Filename: "{app}\main.exe"; Parameters: "--gui"
+Name: "{autodesktop}\Zesec"; Filename: "{app}\main.exe"; Parameters: "--gui"; Tasks: desktopicon
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked

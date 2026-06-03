@@ -26,12 +26,12 @@ Main entry point for the application.
 # 4. Windows-Specific UX
 # nuitka-project-if: {OS} == "Windows":
 #    nuitka-project: --windows-console-mode=disable
-#    nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/assets/icon/windows.ico
+#    nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/assets/icon/icon.ico
 
 # 5. macOS-Specific UX
 # nuitka-project-if: {OS} == "Darwin":
 #    nuitka-project: --macos-create-app-bundle
-#    nuitka-project: --macos-app-icon={MAIN_DIRECTORY}/assets/icon/mac.icns
+#    nuitka-project: --macos-app-icon={MAIN_DIRECTORY}/assets/icon/icon.icns
 #    nuitka-project: --macos-app-protected-resource="NSMicrophoneUsageDescription:Microphone access"
 
 # ==============================================================================
