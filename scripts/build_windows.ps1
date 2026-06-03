@@ -17,9 +17,6 @@ $wixPlatform = if ($ARCH -eq 'amd64') { 'x64' } else { 'x86' }
 $win64Attr = if ($ARCH -eq 'amd64') { "Win64='yes'" } else { "" }
 $progFilesId = if ($ARCH -eq 'amd64') { 'ProgramFiles64Folder' } else { 'ProgramFilesFolder' }
 
-if (Test-Path "main.exe") {
-    Rename-Item -Path "main.exe" -NewName "zesec.exe" -Force
-}
 
 # Compile Inno Setup for .exe installer
 & "C:\Program Files (x86)\Inno Setup 6\iscc.exe" "/DMyAppVersion=$VERSION" "/DArch=$isccArch" "package\windows\setup.iss"

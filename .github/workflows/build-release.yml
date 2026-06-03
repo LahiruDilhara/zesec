@@ -82,7 +82,7 @@ jobs:
           VERSION="${{ needs.validate-tag.outputs.version }}"
           # Fallback to 1.0.0 if not provided just for building
           if [ -z "$VERSION" ]; then VERSION="1.0.0"; fi
-          PYTHONPATH=src python -m nuitka --assume-yes-for-downloads --file-version=$VERSION --product-version=$VERSION main.py
+          PYTHONPATH=src python -m nuitka --assume-yes-for-downloads --file-version=$VERSION --product-version=$VERSION --output-filename=zesec main.py
 
       - name: Package for Linux
         if: runner.os == 'Linux'

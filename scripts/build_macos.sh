@@ -25,13 +25,14 @@ if [ -n "$APP_DIR" ]; then
     APP_NAME=$(basename "$APP_DIR")
     
     # Add a wrapper to launch with --gui by default when double clicked
-    EXEC_PATH="$APP_DIR/Contents/MacOS/main"
-    if [ -f "$EXEC_PATH" ]; then
+    EXEC_PATH=$(find "$APP_DIR/Contents/MacOS" -type f -executable ! -name "*.dylib" | head -n 1)
+    if [ -n "$EXEC_PATH" ] && [ -f "$EXEC_PATH" ]; then
+        EXEC_BASENAME=$(basename "$EXEC_PATH")
         mv "$EXEC_PATH" "${EXEC_PATH}_bin"
-        cat > "$EXEC_PATH" << 'EOF'
+        cat > "$EXEC_PATH" << EOF
 #!/bin/bash
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-"$DIR/main_bin" --gui "$@"
+DIR="\$( cd "\$( dirname "\${BASH_SOURCE[0]}" )" && pwd )"
+"\$DIR/${EXEC_BASENAME}_bin" --gui "\$@"
 EOF
         chmod +x "$EXEC_PATH"
     fi
@@ -61,6 +62,8 @@ else
     # Fallback if no .app
     if [ -f "main.bin" ]; then
         mv main.bin Zesec.bin
+    elif [ -f "zesec" ]; then
+        mv zesec Zesec.bin
     fi
     tar -czvf "dist/Zesec_${VERSION}_macOS_${ARCH}.tar.gz" Zesec.bin
 fi
