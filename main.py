@@ -83,7 +83,7 @@ def main() -> int:
                 os.environ["ZESEC_GUI_DETACHED"] = "1"
                 # DETACHED_PROCESS = 0x00000008
                 subprocess.Popen(
-                    [sys.executable] + sys.argv[1:], 
+                    sys.argv, 
                     creationflags=0x00000008,
                     close_fds=True,
                     stdin=subprocess.DEVNULL,
