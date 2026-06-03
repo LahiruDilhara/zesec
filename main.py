@@ -76,26 +76,7 @@ def main() -> int:
     args, unknown = parser.parse_known_args()
     
     if args.gui:
-        # On Windows, spawn a detached process for the GUI to unblock the terminal
-        if sys.platform == "win32":
-            import subprocess
-            if not os.environ.get("ZESEC_GUI_DETACHED"):
-                os.environ["ZESEC_GUI_DETACHED"] = "1"
-                # CREATE_NO_WINDOW = 0x08000000
-                
-                is_compiled = getattr(sys, 'frozen', False) or "__compiled__" in globals()
-                cmd = sys.argv if is_compiled else [sys.executable] + sys.argv
-                
-                subprocess.Popen(
-                    cmd, 
-                    creationflags=0x08000000,
-                    close_fds=True,
-                    stdin=subprocess.DEVNULL,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
-                sys.exit(0)
-                
+
         # Import and run GUI
         try:
             from zesec.gui import main as gui_main

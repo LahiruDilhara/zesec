@@ -21,7 +21,11 @@ fi
 
 APP_DIR=$(find build -maxdepth 1 -name "*.app" | head -n 1)
 if [ -n "$APP_DIR" ]; then
-    # We found the app bundle
+    # Rename to Zesec.app so the user sees a clean name instead of zesec-gui
+    if [ "$APP_DIR" != "build/Zesec.app" ]; then
+        mv "$APP_DIR" "build/Zesec.app"
+        APP_DIR="build/Zesec.app"
+    fi
     APP_NAME=$(basename "$APP_DIR")
     
     # Add a wrapper to launch with --gui by default when double clicked
@@ -59,12 +63,10 @@ EOF
         --app-drop-link 400 190 \
         "dist/Zesec_${VERSION}_macOS_${ARCH}.dmg" "$APP_DIR" || true
 else
-    EXEC_FILE=$(find build -maxdepth 1 -type f -name "zesec*" | head -n 1)
-    if [ -n "$EXEC_FILE" ]; then
-        EXEC_BASENAME=$(basename "$EXEC_FILE")
-        tar -czvf "dist/Zesec_${VERSION}_macOS_${ARCH}.tar.gz" -C build "$EXEC_BASENAME"
+    if [ -f "build/zesec" ] || [ -f "build/zesec-gui" ]; then
+        tar -czvf "dist/Zesec_${VERSION}_macOS_${ARCH}.tar.gz" -C build .
     else
-        echo "Error: zesec binary not found in build/"
+        echo "Error: binaries not found in build/"
         exit 1
     fi
 fi

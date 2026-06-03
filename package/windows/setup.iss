@@ -16,13 +16,14 @@ ArchitecturesInstallIn64BitMode=x64
 
 [Files]
 Source: "..\..\build\zesec.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\build\zesec-gui.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\Zesec"; Filename: "{app}\zesec.exe"; Parameters: "--gui"
-Name: "{autodesktop}\Zesec"; Filename: "{app}\zesec.exe"; Parameters: "--gui"; Tasks: desktopicon
+Name: "{group}\Zesec"; Filename: "{app}\zesec-gui.exe"; Parameters: "--gui"
+Name: "{autodesktop}\Zesec"; Filename: "{app}\zesec-gui.exe"; Parameters: "--gui"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Run]
-Filename: "{app}\zesec.exe"; Parameters: "--gui"; Description: "Launch Zesec"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\zesec-gui.exe"; Parameters: "--gui"; Description: "Launch Zesec"; Flags: nowait postinstall skipifsilent

@@ -43,19 +43,20 @@ Set-Content -Path $wixFile -Value @"
         <Directory Id='INSTALLDIR' Name='Zesec'>
           <Component Id='MainExecutable' Guid='*' $win64Attr>
             <File Id='ZesecEXE' Name='zesec.exe' DiskId='1' Source='build\zesec.exe' KeyPath='yes'/>
+            <File Id='ZesecGUIEXE' Name='zesec-gui.exe' DiskId='1' Source='build\zesec-gui.exe'/>
             <Environment Id='UpdatePath' Name='PATH' Action='set' Part='last' System='no' Value='[INSTALLDIR]'/>
           </Component>
         </Directory>
       </Directory>
       <Directory Id='ProgramMenuFolder'>
         <Component Id='ApplicationShortcut' Guid='*'>
-          <Shortcut Id='ApplicationStartMenuShortcut' Name='Zesec' Target='[INSTALLDIR]zesec.exe' Arguments='--gui' WorkingDirectory='INSTALLDIR' Icon='icon.ico'/>
+          <Shortcut Id='ApplicationStartMenuShortcut' Name='Zesec' Target='[INSTALLDIR]zesec-gui.exe' Arguments='--gui' WorkingDirectory='INSTALLDIR' Icon='icon.ico'/>
           <RegistryValue Root='HKCU' Key='Software\LahiruDilhara\Zesec' Name='installed' Type='integer' Value='1' KeyPath='yes'/>
         </Component>
       </Directory>
       <Directory Id='DesktopFolder'>
         <Component Id='DesktopShortcut' Guid='*'>
-          <Shortcut Id='ApplicationDesktopShortcut' Name='Zesec' Target='[INSTALLDIR]zesec.exe' Arguments='--gui' WorkingDirectory='INSTALLDIR' Icon='icon.ico'/>
+          <Shortcut Id='ApplicationDesktopShortcut' Name='Zesec' Target='[INSTALLDIR]zesec-gui.exe' Arguments='--gui' WorkingDirectory='INSTALLDIR' Icon='icon.ico'/>
           <RegistryValue Root='HKCU' Key='Software\LahiruDilhara\Zesec' Name='desktop' Type='integer' Value='1' KeyPath='yes'/>
         </Component>
       </Directory>
@@ -72,7 +73,7 @@ Set-Content -Path $wixFile -Value @"
     <Property Id='WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT' Value='Launch Zesec' />
     <Property Id='WIXUI_EXITDIALOGOPTIONALCHECKBOX' Value='1' />
     
-    <CustomAction Id='LaunchApplication' Directory='INSTALLDIR' ExeCommand='&quot;[INSTALLDIR]zesec.exe&quot; --gui' Execute='immediate' Impersonate='yes' Return='asyncNoWait' />
+    <CustomAction Id='LaunchApplication' Directory='INSTALLDIR' ExeCommand='&quot;[INSTALLDIR]zesec-gui.exe&quot; --gui' Execute='immediate' Impersonate='yes' Return='asyncNoWait' />
     
     <UI>
       <Publish Dialog='ExitDialog' Control='Finish' Event='DoAction' Value='LaunchApplication'>WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
