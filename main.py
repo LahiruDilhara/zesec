@@ -82,8 +82,12 @@ def main() -> int:
             if not os.environ.get("ZESEC_GUI_DETACHED"):
                 os.environ["ZESEC_GUI_DETACHED"] = "1"
                 # DETACHED_PROCESS = 0x00000008
+                
+                is_compiled = getattr(sys, 'frozen', False) or "__compiled__" in globals()
+                cmd = sys.argv if is_compiled else [sys.executable] + sys.argv
+                
                 subprocess.Popen(
-                    sys.argv, 
+                    cmd, 
                     creationflags=0x00000008,
                     close_fds=True,
                     stdin=subprocess.DEVNULL,
