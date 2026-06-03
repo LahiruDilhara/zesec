@@ -211,7 +211,12 @@ class MainWindow(QMainWindow):
         self._encrypt_key_file_selector.path_changed.connect(lambda _: self._update_encrypt_btn_state())
         
         layout.addStretch()
-        return widget
+        from PySide6.QtWidgets import QScrollArea
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.NoFrame)
+        scroll.setWidget(widget)
+        return scroll
         
     def _create_decrypt_tab(self) -> QWidget:
         """Create decryption tab."""
@@ -273,7 +278,12 @@ class MainWindow(QMainWindow):
         self._decrypt_key_file_selector.path_changed.connect(lambda _: self._update_decrypt_btn_state())
         
         layout.addStretch()
-        return widget
+        from PySide6.QtWidgets import QScrollArea
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.NoFrame)
+        scroll.setWidget(widget)
+        return scroll
         
     def _create_clean_tab(self) -> QWidget:
         """Create cleaning tab."""
@@ -322,7 +332,13 @@ class MainWindow(QMainWindow):
         self._clean_file_selector.paths_changed.connect(lambda _: self._update_clean_btn_state())
         
         layout.addStretch()
-        return widget
+        
+        from PySide6.QtWidgets import QScrollArea
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.NoFrame)
+        scroll.setWidget(widget)
+        return scroll
         
     def _create_key_tab(self) -> QWidget:
         """Create key management tab."""
@@ -382,7 +398,13 @@ class MainWindow(QMainWindow):
         self._key_name_edit.textChanged.connect(lambda _: self._update_key_btn_state())
         
         layout.addStretch()
-        return widget
+        
+        from PySide6.QtWidgets import QScrollArea
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.NoFrame)
+        scroll.setWidget(widget)
+        return scroll
         
     # Removed _browse_key_file_save since we use directory selector
             
@@ -405,6 +427,7 @@ class MainWindow(QMainWindow):
             
         # Disable button to prevent concurrent runs
         self._encrypt_btn.setEnabled(False)
+        self._encrypt_file_selector.set_processing(True)
         self._encrypt_progress.reset(len(paths))
         
         self._encryption_queue = paths.copy()
@@ -425,6 +448,7 @@ class MainWindow(QMainWindow):
             
             # Clear form
             self._encrypt_file_selector.clear()
+            self._encrypt_file_selector.set_processing(False)
             self._encrypt_password.clear()
             self._encrypt_password_confirm.clear()
             self._encrypt_key_file_selector.clear()
@@ -463,6 +487,7 @@ class MainWindow(QMainWindow):
             
         # Disable button
         self._decrypt_btn.setEnabled(False)
+        self._decrypt_file_selector.set_processing(True)
         self._decrypt_progress.reset(len(paths))
         
         self._decryption_queue = paths.copy()
@@ -483,6 +508,7 @@ class MainWindow(QMainWindow):
             
             # Clear form
             self._decrypt_file_selector.clear()
+            self._decrypt_file_selector.set_processing(False)
             self._decrypt_password.clear()
             self._decrypt_key_file_selector.clear()
             self._decrypt_dest_selector.clear()
@@ -530,6 +556,7 @@ class MainWindow(QMainWindow):
         if reply == QMessageBox.Yes:
             # Disable button
             self._clean_btn.setEnabled(False)
+            self._clean_file_selector.set_processing(True)
             self._clean_progress.reset(len(paths))
             
             self._cleaning_queue = paths.copy()
@@ -550,6 +577,7 @@ class MainWindow(QMainWindow):
             
             # Clear form
             self._clean_file_selector.clear()
+            self._clean_file_selector.set_processing(False)
             self._update_clean_btn_state()
             return
             

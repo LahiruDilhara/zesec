@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QIcon
 from .hover_button import HoverButton
 from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtGui import QPixmap
 import sys
 
 from ...utils.asset_utils import get_asset_path
@@ -49,6 +50,16 @@ class FileItemWidget(QWidget):
         self._set_circle_color("#bdc3c7") # Grey initially
         layout.addWidget(self.status_circle, 0)
         
+        # Logo indicator for .zesec files
+        self.logo_label = QLabel()
+        self.logo_label.setFixedSize(18, 18)
+        if self.path.name.endswith(".zesec"):
+            icon_path = get_asset_path("icon/icon.png")
+            if icon_path.exists():
+                pixmap = QPixmap(str(icon_path)).scaled(18, 18, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.logo_label.setPixmap(pixmap)
+        layout.addWidget(self.logo_label, 0)
+        
         self.name_label = QLabel(self.path.name)
         self.name_label.setStyleSheet("background: transparent; margin-left: 10px;")
         layout.addWidget(self.name_label, 2)
@@ -74,6 +85,7 @@ class FileItemWidget(QWidget):
         self.delete_btn.setStyleSheet(
             "QPushButton { background: transparent; border: none; }"
             "QPushButton:hover { background: rgba(0, 0, 0, 10%); border-radius: 4px; }"
+            "QPushButton:disabled { opacity: 0.5; }"
         )
         self.delete_btn.clicked.connect(lambda: self.delete_clicked.emit(self.path))
         layout.addWidget(self.delete_btn, 0)
@@ -83,6 +95,10 @@ class FileItemWidget(QWidget):
         
     def set_number(self, num: int):
         self.number_label.setText(f"{num}.")
+        
+    def set_processing(self, processing: bool):
+        """Disable or enable delete button during processing."""
+        self.delete_btn.setEnabled(not processing)
         
     def update_progress(self, value: int):
         self.progress.setValue(value)
@@ -132,7 +148,7 @@ class MultiFileSelectorWidget(QWidget):
         
         # Stacked widget to switch between "No files" and the list
         self._stack = QStackedWidget()
-        self._stack.setMinimumHeight(150)  # Expandable
+        self._stack.setFixedHeight(280)  # Fixed height for list
         
         # Page 0: No files label
         self._empty_label = QLabel("No files added")
@@ -148,6 +164,16 @@ class MultiFileSelectorWidget(QWidget):
         
         self._update_ui_state()
         
+    def set_processing(self, processing: bool):
+        """Disable UI elements during processing."""
+        self._add_btn.setEnabled(not processing)
+        self._clear_btn.setEnabled(not processing)
+        for i in range(self._list_widget.count()):
+            item = self._list_widget.item(i)
+            widget = self._list_widget.itemWidget(item)
+            if isinstance(widget, FileItemWidget):
+                widget.set_processing(processing)
+                
     def _add_files(self):
         """Open file dialog and add files."""
         paths, _ = QFileDialog.getOpenFileNames(
