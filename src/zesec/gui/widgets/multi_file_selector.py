@@ -18,6 +18,33 @@ import sys
 
 from ...utils.asset_utils import get_asset_path
 
+class IconButton(QPushButton):
+    """Custom icon button with hand cursor and modern hover styling."""
+    
+    def __init__(self, icon_path: str, size: int = 26, icon_size: int = 16, hover_bg: str = "rgba(149, 165, 166, 0.2)", parent=None):
+        super().__init__(parent)
+        self.setIcon(QIcon(icon_path))
+        self.setIconSize(QSize(icon_size, icon_size))
+        self.setFixedSize(size, size)
+        self.setCursor(Qt.PointingHandCursor)
+        self.setStyleSheet(f"""
+            IconButton {{ 
+                background: transparent; 
+                border: none; 
+                border-radius: 4px;
+            }}
+            IconButton:hover {{ 
+                background: {hover_bg}; 
+            }}
+            IconButton:pressed {{
+                background: rgba(149, 165, 166, 0.4); 
+            }}
+            IconButton:disabled {{ 
+                background: transparent;
+            }}
+        """)
+
+
 class FileItemWidget(QWidget):
     """Custom widget for a file item in the list."""
     
@@ -96,41 +123,17 @@ class FileItemWidget(QWidget):
         layout.addWidget(self.progress, 1)
         
         up_svg_path = self._get_svg_path("up.svg")
-        self.up_btn = QPushButton("")
-        self.up_btn.setIcon(QIcon(up_svg_path))
-        self.up_btn.setIconSize(QSize(16, 16))
-        self.up_btn.setFixedSize(26, 26)
-        self.up_btn.setStyleSheet(
-            "QPushButton { background: transparent; border: none; }"
-            "QPushButton:hover { background: rgba(0, 0, 0, 10%); border-radius: 4px; }"
-            "QPushButton:disabled { opacity: 0.5; }"
-        )
+        self.up_btn = IconButton(up_svg_path)
         self.up_btn.clicked.connect(lambda: self.move_up_clicked.emit(self.path))
         layout.addWidget(self.up_btn, 0)
         
         down_svg_path = self._get_svg_path("down.svg")
-        self.down_btn = QPushButton("")
-        self.down_btn.setIcon(QIcon(down_svg_path))
-        self.down_btn.setIconSize(QSize(16, 16))
-        self.down_btn.setFixedSize(26, 26)
-        self.down_btn.setStyleSheet(
-            "QPushButton { background: transparent; border: none; }"
-            "QPushButton:hover { background: rgba(0, 0, 0, 10%); border-radius: 4px; }"
-            "QPushButton:disabled { opacity: 0.5; }"
-        )
+        self.down_btn = IconButton(down_svg_path)
         self.down_btn.clicked.connect(lambda: self.move_down_clicked.emit(self.path))
         layout.addWidget(self.down_btn, 0)
         
         bin_svg_path = self._get_svg_path("bin.svg")
-        self.delete_btn = QPushButton("")
-        self.delete_btn.setIcon(QIcon(bin_svg_path))
-        self.delete_btn.setIconSize(QSize(18, 18))
-        self.delete_btn.setFixedSize(30, 30)
-        self.delete_btn.setStyleSheet(
-            "QPushButton { background: transparent; border: none; }"
-            "QPushButton:hover { background: rgba(0, 0, 0, 10%); border-radius: 4px; }"
-            "QPushButton:disabled { opacity: 0.5; }"
-        )
+        self.delete_btn = IconButton(bin_svg_path, size=30, icon_size=18, hover_bg="rgba(231, 76, 60, 0.2)")
         self.delete_btn.clicked.connect(lambda: self.delete_clicked.emit(self.path))
         layout.addWidget(self.delete_btn, 0)
         
