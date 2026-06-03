@@ -1,8 +1,10 @@
 [Desktop Entry]
 Name=Zesec
 Comment=Secure file encryption and cleaning tool
-Exec=/usr/local/bin/zesec-gui --gui
+Exec=/usr/local/bin/zesec-gui --gui %f
 Icon=/opt/zesec/icon.png
 Type=Application
 Terminal=false
 Categories=Utility;Security;
+MimeType=application/x-zesec;
+StartupNotify=true

@@ -47,6 +47,16 @@ EOF
         plutil -replace CFBundleIdentifier -string "com.lahirudilhara.zesec" "$PLIST_PATH" || true
         plutil -replace CFBundleShortVersionString -string "$VERSION" "$PLIST_PATH" || true
         plutil -replace CFBundleVersion -string "$VERSION" "$PLIST_PATH" || true
+        
+        # Add file association for .zesec files to macOS Launch Services
+        plutil -insert CFBundleDocumentTypes -array "$PLIST_PATH" || true
+        plutil -insert CFBundleDocumentTypes.0 -dictionary "$PLIST_PATH" || true
+        plutil -insert CFBundleDocumentTypes.0.CFBundleTypeName -string "Zesec Encrypted File" "$PLIST_PATH" || true
+        plutil -insert CFBundleDocumentTypes.0.CFBundleTypeExtensions -array "$PLIST_PATH" || true
+        plutil -insert CFBundleDocumentTypes.0.CFBundleTypeExtensions.0 -string "zesec" "$PLIST_PATH" || true
+        plutil -insert CFBundleDocumentTypes.0.CFBundleTypeRole -string "Editor" "$PLIST_PATH" || true
+        plutil -insert CFBundleDocumentTypes.0.LSHandlerRank -string "Owner" "$PLIST_PATH" || true
+        plutil -insert CFBundleDocumentTypes.0.CFBundleTypeIconFile -string "icon.icns" "$PLIST_PATH" || true
     fi
     
     # Zip the app bundle

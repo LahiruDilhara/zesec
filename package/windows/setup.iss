@@ -27,3 +27,9 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Run]
 Filename: "{app}\zesec-gui.exe"; Parameters: "--gui"; Description: "Launch Zesec"; Flags: nowait postinstall skipifsilent
+
+[Registry]
+Root: HKCR; Subkey: ".zesec"; ValueType: string; ValueName: ""; ValueData: "Zesec.Document"; Flags: uninsdeletevalue
+Root: HKCR; Subkey: "Zesec.Document"; ValueType: string; ValueName: ""; ValueData: "Zesec Encrypted File"; Flags: uninsdeletekey
+Root: HKCR; Subkey: "Zesec.Document\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\zesec-gui.exe,0"
+Root: HKCR; Subkey: "Zesec.Document\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\zesec-gui.exe"" --gui ""%1"""
