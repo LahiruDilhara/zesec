@@ -28,9 +28,9 @@ nfpm pkg --packager deb --target ../../dist/zesec_${VERSION}_${ARCH}.deb
 nfpm pkg --packager rpm --target ../../dist/zesec_${VERSION}_${ARCH}.rpm
 cd ../..
 
-# Create standalone tar.gz
-if [ -f main.bin ]; then
-    tar -czvf dist/zesec-linux-${ARCH}.tar.gz main.dist main.bin
-else
-    tar -czvf dist/zesec-linux-${ARCH}.tar.gz main.dist main
+if [ -f "main.dist/main" ]; then
+    mv main.dist/main main.dist/zesec
 fi
+
+# Create standalone tar.gz
+tar -czvf dist/zesec-linux-${ARCH}.tar.gz main.dist

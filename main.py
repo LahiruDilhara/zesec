@@ -10,7 +10,6 @@ Main entry point for the application.
 
 # 1. Core Build Mode
 # nuitka-project: --standalone
-# nuitka-project: --onefile
 # nuitka-project: --enable-plugin=pyside6
 
 # 2. Resource & Data Mapping
