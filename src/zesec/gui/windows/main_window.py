@@ -157,7 +157,7 @@ class MainWindow(QMainWindow):
         self._encrypt_file_selector = MultiFileSelectorWidget()
         file_layout.addWidget(self._encrypt_file_selector)
         file_group.setLayout(file_layout)
-        layout.addWidget(file_group, 1)  # Stretch factor 1 allows it to expand
+        layout.addWidget(file_group)  # Stretch factor 1 allows it to expand
         
         # Password input
         self._encrypt_password = PasswordInputWidget(label="Password:")
@@ -230,7 +230,7 @@ class MainWindow(QMainWindow):
         self._decrypt_file_selector = MultiFileSelectorWidget(file_filter="Encrypted Files (*.zesec);;All Files (*)")
         file_layout.addWidget(self._decrypt_file_selector)
         file_group.setLayout(file_layout)
-        layout.addWidget(file_group, 1)  # Stretch factor 1 allows it to expand
+        layout.addWidget(file_group)  # Stretch factor 1 allows it to expand
         
         # Password input
         self._decrypt_password = PasswordInputWidget(label="Password:")
@@ -297,7 +297,7 @@ class MainWindow(QMainWindow):
         self._clean_file_selector = MultiFileSelectorWidget()
         file_layout.addWidget(self._clean_file_selector)
         file_group.setLayout(file_layout)
-        layout.addWidget(file_group, 1)
+        layout.addWidget(file_group)
         
         # Options
         options_group = QGroupBox("Options")
