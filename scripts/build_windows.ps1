@@ -41,19 +41,19 @@ Set-Content -Path $wixFile -Value @"
       <Directory Id='$progFilesId' Name='PFiles'>
         <Directory Id='INSTALLDIR' Name='Zesec'>
           <Component Id='MainExecutable' Guid='*' $win64Attr>
-            <File Id='ZesecEXE' Name='Zesec.exe' DiskId='1' Source='main.dist\Zesec.exe' KeyPath='yes'/>
+            <File Id='ZesecEXE' Name='main.exe' DiskId='1' Source='main.dist\main.exe' KeyPath='yes'/>
           </Component>
         </Directory>
       </Directory>
       <Directory Id='ProgramMenuFolder'>
         <Component Id='ApplicationShortcut' Guid='*'>
-          <Shortcut Id='ApplicationStartMenuShortcut' Name='Zesec' Target='[INSTALLDIR]Zesec.exe' Arguments='--gui' WorkingDirectory='INSTALLDIR' Icon='icon.ico'/>
+          <Shortcut Id='ApplicationStartMenuShortcut' Name='Zesec' Target='[INSTALLDIR]main.exe' Arguments='--gui' WorkingDirectory='INSTALLDIR' Icon='icon.ico'/>
           <RegistryValue Root='HKCU' Key='Software\LahiruDilhara\Zesec' Name='installed' Type='integer' Value='1' KeyPath='yes'/>
         </Component>
       </Directory>
       <Directory Id='DesktopFolder'>
         <Component Id='DesktopShortcut' Guid='*'>
-          <Shortcut Id='ApplicationDesktopShortcut' Name='Zesec' Target='[INSTALLDIR]Zesec.exe' Arguments='--gui' WorkingDirectory='INSTALLDIR' Icon='icon.ico'/>
+          <Shortcut Id='ApplicationDesktopShortcut' Name='Zesec' Target='[INSTALLDIR]main.exe' Arguments='--gui' WorkingDirectory='INSTALLDIR' Icon='icon.ico'/>
           <RegistryValue Root='HKCU' Key='Software\LahiruDilhara\Zesec' Name='desktop' Type='integer' Value='1' KeyPath='yes'/>
         </Component>
       </Directory>
