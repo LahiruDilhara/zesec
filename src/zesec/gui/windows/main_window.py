@@ -10,7 +10,9 @@ from PySide6.QtWidgets import (
     QFormLayout, QLineEdit
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QShortcut, QKeySequence
+from PySide6.QtGui import QShortcut, QKeySequence, QIcon
+
+from ...utils.asset_utils import get_asset_path
 
 from ...di.container import ApplicationContainer
 from ...core.models.encryption_result import EncryptionResult
@@ -105,6 +107,11 @@ class MainWindow(QMainWindow):
         """Initialize UI components."""
         self.setWindowTitle("Zesec - Secure File Manager")
         self.resize(900, 800)
+        
+        # Set Window Icon
+        icon_path = get_asset_path("icon/icon.png")
+        if icon_path.exists():
+            self.setWindowIcon(QIcon(str(icon_path)))
         self.setMinimumSize(700, 750)
         
         # Ctrl+W shortcut to close

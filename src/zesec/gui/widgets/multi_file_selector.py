@@ -14,6 +14,8 @@ from .hover_button import HoverButton
 from PySide6.QtCore import Qt, Signal, QSize
 import sys
 
+from ...utils.asset_utils import get_asset_path
+
 class FileItemWidget(QWidget):
     """Custom widget for a file item in the list."""
     
@@ -26,13 +28,7 @@ class FileItemWidget(QWidget):
         
     def _get_svg_path(self, filename: str) -> str:
         """Get the absolute path to an SVG asset."""
-        if "ZESEC_ROOT" in os.environ:
-            base_dir = Path(os.environ["ZESEC_ROOT"])
-        elif getattr(sys, 'frozen', False):
-            base_dir = Path(sys._MEIPASS)
-        else:
-            base_dir = Path(__file__).parent.parent.parent.parent.parent
-        return str(base_dir / "public" / "svg" / filename)
+        return str(get_asset_path(f"svg/{filename}"))
         
     def _init_ui(self):
         self.setMinimumHeight(40)

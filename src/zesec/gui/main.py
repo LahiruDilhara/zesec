@@ -53,7 +53,7 @@ def main() -> int:
                 base_dir = Path(__file__).parent.parent.parent.parent
                 
             base_dir_str = base_dir.as_posix()
-            stylesheet = stylesheet.replace("url(public/svg/", f"url({base_dir_str}/public/svg/")
+            stylesheet = stylesheet.replace("url(assets/svg/", f"url({base_dir_str}/assets/svg/")
             
             app.setStyleSheet(stylesheet)
         except Exception as e:

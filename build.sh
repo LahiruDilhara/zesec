@@ -9,13 +9,8 @@ echo "Compiling Zesec with Nuitka..."
 mkdir -p build
 
 PYTHONPATH=src python -m nuitka \
-    --standalone \
-    --onefile \
     --assume-yes-for-downloads \
-    --plugin-enable=pyside6 \
     --include-package=zesec \
-    --include-data-file=src/zesec/gui/style.qss=zesec/gui/style.qss \
-    --include-data-dir=public/svg=public/svg \
     --output-dir=build \
     --output-filename=zesec \
     main.py

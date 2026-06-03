@@ -4,6 +4,37 @@
 Main entry point for the application.
 """
 
+# ==============================================================================
+# NUITKA BUILD CONFIGURATION MANIFEST
+# ==============================================================================
+
+# 1. Core Build Mode
+# nuitka-project: --standalone
+# nuitka-project: --onefile
+# nuitka-project: --enable-plugin=pyside6
+
+# 2. Resource & Data Mapping
+# nuitka-project: --include-data-dir={MAIN_DIRECTORY}/src/zesec/gui=zesec/gui
+# nuitka-project: --include-data-dir={MAIN_DIRECTORY}/assets=assets
+
+# 3. Project Metadata (Windows/macOS Details)
+# nuitka-project: --company-name="Lahiru Dilhara"
+# nuitka-project: --product-name="Zesec"
+# nuitka-project: --file-version=1.4.0
+# nuitka-project: --copyright="Copyright (c) 2026 Lahiru Dilhara. All rights reserved."
+
+# 4. Windows-Specific UX
+# nuitka-project-if: {OS} == "Windows":
+#    nuitka-project: --windows-console-mode=disable
+#    nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/assets/icon/windows.ico
+
+# 5. macOS-Specific UX
+# nuitka-project-if: {OS} == "Darwin":
+#    nuitka-project: --macos-create-app-bundle
+#    nuitka-project: --macos-app-icon={MAIN_DIRECTORY}/assets/icon/mac.icns
+#    nuitka-project: --macos-app-protected-resource="NSMicrophoneUsageDescription:Microphone access"
+
+# ==============================================================================
 import argparse
 import os
 import sys

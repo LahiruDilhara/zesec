@@ -122,7 +122,7 @@ QCheckBox::indicator:hover, QListView::indicator:hover {
 QCheckBox::indicator:checked, QListView::indicator:checked {
     background-color: transparent;
     border: 2px solid #3498db;
-    image: url(public/svg/checkedBox.svg);
+    image: url(assets/svg/checkedBox.svg);
 }
 
 /* List Views (File Selector) */
