@@ -14,7 +14,7 @@ vendor: "Lahiru Dilhara"
 homepage: "https://github.com/LahiruDilhara/zesec"
 license: "MIT"
 contents:
-  - src: "../../zesec"
+  - src: "../../build/zesec"
     dst: "/opt/zesec/zesec"
   - src: "/opt/zesec/zesec"
     dst: "/usr/local/bin/zesec"

@@ -30,4 +30,4 @@ cd ../..
 
 
 # Create standalone tar.gz
-tar -czvf dist/zesec-linux-${ARCH}.tar.gz zesec
+tar -czvf dist/zesec-linux-${ARCH}.tar.gz -C build zesec

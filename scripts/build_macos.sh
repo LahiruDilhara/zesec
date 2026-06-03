@@ -19,7 +19,7 @@ if ! command -v create-dmg &> /dev/null; then
     brew install create-dmg
 fi
 
-APP_DIR=$(find . -maxdepth 1 -name "*.app" | head -n 1)
+APP_DIR=$(find build -maxdepth 1 -name "*.app" | head -n 1)
 if [ -n "$APP_DIR" ]; then
     # We found the app bundle
     APP_NAME=$(basename "$APP_DIR")
@@ -60,10 +60,5 @@ EOF
         "dist/Zesec_${VERSION}_macOS_${ARCH}.dmg" "$APP_DIR" || true
 else
     # Fallback if no .app
-    if [ -f "main.bin" ]; then
-        mv main.bin Zesec.bin
-    elif [ -f "zesec" ]; then
-        mv zesec Zesec.bin
-    fi
-    tar -czvf "dist/Zesec_${VERSION}_macOS_${ARCH}.tar.gz" Zesec.bin
+    tar -czvf "dist/Zesec_${VERSION}_macOS_${ARCH}.tar.gz" -C build zesec
 fi
