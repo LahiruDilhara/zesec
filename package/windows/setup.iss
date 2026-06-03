@@ -18,8 +18,8 @@ ArchitecturesInstallIn64BitMode=x64
 Source: "..\..\main.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\Zesec"; Filename: "{app}\main.exe"; Parameters: "--gui"
-Name: "{autodesktop}\Zesec"; Filename: "{app}\main.exe"; Parameters: "--gui"; Tasks: desktopicon
+Name: "{group}\Zesec"; Filename: "{app}\Zesec.exe"; Parameters: "--gui"
+Name: "{autodesktop}\Zesec"; Filename: "{app}\Zesec.exe"; Parameters: "--gui"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked

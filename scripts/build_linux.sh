@@ -29,8 +29,8 @@ nfpm pkg --packager rpm --target ../../dist/zesec_${VERSION}_${ARCH}.rpm
 cd ../..
 
 # Create standalone tar.gz
-if [ -f main.bin ]; then
-    tar -czvf dist/zesec-linux-${ARCH}.tar.gz main.dist main.bin
+if [ -f Zesec.bin ]; then
+    tar -czvf dist/zesec-linux-${ARCH}.tar.gz main.dist Zesec.bin
 else
-    tar -czvf dist/zesec-linux-${ARCH}.tar.gz main.dist main
+    tar -czvf dist/zesec-linux-${ARCH}.tar.gz main.dist Zesec
 fi
