@@ -17,8 +17,8 @@ $wixPlatform = if ($ARCH -eq 'amd64') { 'x64' } else { 'x86' }
 $win64Attr = if ($ARCH -eq 'amd64') { "Win64='yes'" } else { "" }
 $progFilesId = if ($ARCH -eq 'amd64') { 'ProgramFiles64Folder' } else { 'ProgramFilesFolder' }
 
-if (Test-Path "main.dist\main.exe") {
-    Rename-Item -Path "main.dist\main.exe" -NewName "zesec.exe" -Force
+if (Test-Path "main.exe") {
+    Rename-Item -Path "main.exe" -NewName "zesec.exe" -Force
 }
 
 # Compile Inno Setup for .exe installer
@@ -45,7 +45,7 @@ Set-Content -Path $wixFile -Value @"
       <Directory Id='$progFilesId' Name='PFiles'>
         <Directory Id='INSTALLDIR' Name='Zesec'>
           <Component Id='MainExecutable' Guid='*' $win64Attr>
-            <File Id='ZesecEXE' Name='zesec.exe' DiskId='1' Source='main.dist\zesec.exe' KeyPath='yes'/>
+            <File Id='ZesecEXE' Name='zesec.exe' DiskId='1' Source='zesec.exe' KeyPath='yes'/>
             <Environment Id='UpdatePath' Name='PATH' Action='set' Part='last' System='no' Value='[INSTALLDIR]'/>
           </Component>
         </Directory>

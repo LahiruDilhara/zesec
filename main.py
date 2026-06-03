@@ -10,10 +10,11 @@ Main entry point for the application.
 
 # 1. Core Build Mode
 # nuitka-project: --standalone
+# nuitka-project: --onefile
 # nuitka-project: --enable-plugin=pyside6
 
 # 2. Resource & Data Mapping
-# nuitka-project: --include-data-dir={MAIN_DIRECTORY}/src/zesec/gui=zesec/gui
+# nuitka-project: --include-data-dir={MAIN_DIRECTORY}/src/zesec/gui=src/zesec/gui
 # nuitka-project: --include-data-dir={MAIN_DIRECTORY}/assets=assets
 
 # 3. Project Metadata (Windows/macOS Details)
@@ -24,7 +25,7 @@ Main entry point for the application.
 
 # 4. Windows-Specific UX
 # nuitka-project-if: {OS} == "Windows":
-#    nuitka-project: --windows-console-mode=attach
+#    nuitka-project: --windows-console-mode=disable
 #    nuitka-project: --windows-icon-from-ico={MAIN_DIRECTORY}/assets/icon/icon.ico
 
 # 5. macOS-Specific UX
@@ -37,6 +38,7 @@ Main entry point for the application.
 import argparse
 import os
 import sys
+import ctypes
 from pathlib import Path
 
 # Get the project root directory
@@ -61,6 +63,21 @@ except ImportError as e:
     sys.exit(1)
 
 
+def _attach_windows_console():
+    """Dynamically attach to the parent console to restore CLI output on Windows."""
+    if sys.platform == "win32":
+        ATTACH_PARENT_PROCESS = -1
+        if ctypes.windll.kernel32.AttachConsole(ATTACH_PARENT_PROCESS):
+            import msvcrt
+            stdout_fd = os.open("CONOUT$", os.O_RDWR | os.O_TEXT)
+            os.dup2(stdout_fd, 1)
+            sys.stdout = open(1, "w", encoding="utf-8", buffering=1)
+            
+            stderr_fd = os.open("CONOUT$", os.O_RDWR | os.O_TEXT)
+            os.dup2(stderr_fd, 2)
+            sys.stderr = open(2, "w", encoding="utf-8", buffering=1)
+
+
 def main() -> int:
     """Main entry point that routes to console or GUI mode."""
     parser = argparse.ArgumentParser(
@@ -72,7 +89,7 @@ def main() -> int:
         help="Launch the graphical user interface"
     )
     
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
     
     if args.gui:
         # Import and run GUI
@@ -85,6 +102,7 @@ def main() -> int:
             return 1
     else:
         # Run console mode
+        _attach_windows_console()
         return console_main()
 
 
