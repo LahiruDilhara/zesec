@@ -41,6 +41,12 @@ EOF
         chmod +x "$EXEC_PATH"
     fi
     
+    # Bundle the console executable inside the App bundle so it is distributed
+    if [ -f "build/zesec" ]; then
+        cp "build/zesec" "$APP_DIR/Contents/MacOS/zesec"
+        chmod +x "$APP_DIR/Contents/MacOS/zesec"
+    fi
+    
     # Inject dynamic Version and static Bundle ID into Info.plist for clean upgrade paths
     PLIST_PATH="$APP_DIR/Contents/Info.plist"
     if [ -f "$PLIST_PATH" ]; then
