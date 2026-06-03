@@ -65,6 +65,18 @@ Set-Content -Path $wixFile -Value @"
       <ComponentRef Id='ApplicationShortcut' />
       <ComponentRef Id='DesktopShortcut' />
     </Feature>
+    
+    <!-- UI Configuration -->
+    <Property Id='WIXUI_INSTALLDIR' Value='INSTALLDIR' />
+    <UIRef Id='WixUI_InstallDir' />
+    <Property Id='WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT' Value='Launch Zesec' />
+    <Property Id='WIXUI_EXITDIALOGOPTIONALCHECKBOX' Value='1' />
+    
+    <CustomAction Id='LaunchApplication' Directory='INSTALLDIR' ExeCommand='&quot;[INSTALLDIR]zesec.exe&quot; --gui' Execute='immediate' Impersonate='yes' Return='asyncNoWait' />
+    
+    <UI>
+      <Publish Dialog='ExitDialog' Control='Finish' Event='DoAction' Value='LaunchApplication'>WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
+    </UI>
   </Product>
 </Wix>
 "@
