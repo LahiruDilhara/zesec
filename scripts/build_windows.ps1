@@ -12,7 +12,7 @@ New-Item -ItemType Directory -Force -Path dist | Out-Null
 
 Write-Host "Packaging for Windows (VERSION: $VERSION, ARCH: $ARCH)"
 
-$isccArch = if ($ARCH -eq 'amd64') { 'x64' } else { 'x86' }
+$isccArch = if ($ARCH -eq 'amd64') { 'x64compatible' } else { 'x86' }
 $wixPlatform = if ($ARCH -eq 'amd64') { 'x64' } else { 'x86' }
 $win64Attr = if ($ARCH -eq 'amd64') { "Win64='yes'" } else { "" }
 $progFilesId = if ($ARCH -eq 'amd64') { 'ProgramFiles64Folder' } else { 'ProgramFilesFolder' }
@@ -43,8 +43,10 @@ Set-Content -Path $wixFile -Value @"
         <Directory Id='INSTALLDIR' Name='Zesec'>
           <Component Id='MainExecutable' Guid='*' $win64Attr>
             <File Id='ZesecEXE' Name='zesec.exe' DiskId='1' Source='build\zesec.exe' KeyPath='yes'/>
-            <File Id='ZesecGUIEXE' Name='zesec-gui.exe' DiskId='1' Source='build\zesec-gui.exe'/>
             <Environment Id='UpdatePath' Name='PATH' Action='set' Part='last' System='no' Value='[INSTALLDIR]'/>
+          </Component>
+          <Component Id='GUIExecutable' Guid='*' $win64Attr>
+            <File Id='ZesecGUIEXE' Name='zesec-gui.exe' DiskId='1' Source='build\zesec-gui.exe' KeyPath='yes'/>
           </Component>
         </Directory>
       </Directory>
@@ -63,6 +65,7 @@ Set-Content -Path $wixFile -Value @"
     </Directory>
     <Feature Id='Complete' Level='1'>
       <ComponentRef Id='MainExecutable' />
+      <ComponentRef Id='GUIExecutable' />
       <ComponentRef Id='ApplicationShortcut' />
       <ComponentRef Id='DesktopShortcut' />
     </Feature>
