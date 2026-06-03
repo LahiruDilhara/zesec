@@ -29,8 +29,8 @@ if [ -n "$APP_DIR" ]; then
     APP_NAME=$(basename "$APP_DIR")
     
     # Add a wrapper to launch with --gui by default when double clicked
-    EXEC_PATH=$(find "$APP_DIR/Contents/MacOS" -type f -executable ! -name "*.dylib" | head -n 1)
-    if [ -n "$EXEC_PATH" ] && [ -f "$EXEC_PATH" ]; then
+    EXEC_PATH="$APP_DIR/Contents/MacOS/zesec-gui"
+    if [ -f "$EXEC_PATH" ]; then
         EXEC_BASENAME=$(basename "$EXEC_PATH")
         mv "$EXEC_PATH" "${EXEC_PATH}_bin"
         cat > "$EXEC_PATH" << EOF
@@ -42,8 +42,12 @@ EOF
     fi
     
     # Bundle the console executable inside the App bundle so it is distributed
+    mkdir -p "$APP_DIR/Contents/MacOS"
     if [ -f "build/zesec" ]; then
         cp "build/zesec" "$APP_DIR/Contents/MacOS/zesec"
+        chmod +x "$APP_DIR/Contents/MacOS/zesec"
+    elif [ -f "build/zesec.bin" ]; then
+        cp "build/zesec.bin" "$APP_DIR/Contents/MacOS/zesec"
         chmod +x "$APP_DIR/Contents/MacOS/zesec"
     fi
     
