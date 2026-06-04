@@ -16,29 +16,30 @@ A modern, cross-platform application for secure file encryption, decryption, and
 
 ## 🚀 Features
 
-### 🔐 Encryption & Decryption
+### 🔐 Encryption & Decryption (Batch Processing Supported)
 - **AES-256-GCM encryption** - Industry-standard encryption algorithm
 - **Password-based encryption** - Secure key derivation using PBKDF2
 - **Optional key file support** - Enhanced security with key file + password combination
 - **Automatic file extension** - Encrypted files use `.zesec` extension
+- **Custom File Type Association** - Native OS file associations for `.zesec` files
 - **Secure original file deletion** - Optionally clean original files after encryption
+- **Batch Processing** - Encrypt or decrypt hundreds of files at once flawlessly in both GUI and CLI without freezes
 
-### 🧹 Secure File Cleaning
-- **Multi-pass overwriting** - Securely overwrite files before deletion
-- **Forensic-grade deletion** - Makes file recovery extremely difficult
+### 🧹 Deep Cleaning
+- **Multi-pass overwriting** - Securely overwrite sensitive files with zero-byte buffers before deletion, ensuring files are deeply cleaned and never exist for recovery
+- **Forensic-grade deletion** - Removes recovery options completely, making file recovery virtually impossible
 - **Directory cleaning** - Clean entire directories recursively
-- **Configurable passes** - Customize the number of overwrite passes
+- **Batch Cleaning** - Process multiple files or folders simultaneously
 
 ### 💻 Dual Interface
-- **Graphical User Interface (GUI)** - Modern PySide6-based interface with tabbed layout
-- **Command-Line Interface (CLI)** - Interactive console with command autocomplete
-- **Unified functionality** - Same features available in both interfaces
+- **Graphical User Interface (GUI)** - Modern PySide6-based interface with tabbed layout, custom lists, and batch progress tracking
+- **Command-Line Interface (CLI)** - Interactive console with smart path and command autocomplete (`prompt_toolkit`) and unified `tqdm` progress bars
+- **Unified functionality** - Same features available natively across both interfaces
 
 ### 🎯 Additional Features
 - **Key file generation** - Generate secure random encryption keys
-- **Progress tracking** - Real-time progress indicators for long operations
-- **Error handling** - Comprehensive error messages and validation
-- **Cross-platform** - Works on Windows, macOS, and Linux
+- **Process Cancellation** - Real-time progress tracking with safe interruption capabilities
+- **Cross-platform** - Works and natively compiles on Windows, macOS, and Linux
 
 ## 📋 Requirements
 
@@ -49,7 +50,16 @@ A modern, cross-platform application for secure file encryption, decryption, and
 
 ## 🔧 Installation
 
-### From Source
+### 📦 Pre-compiled Installers (Recommended)
+Zesec provides native, ready-to-use installers for all major operating systems. You can download the latest release directly from the GitHub Releases page.
+
+- **Windows:** Download the `.msi` (Windows Installer) or `.exe` setup file.
+- **Linux:** Download the `.deb` (Debian/Ubuntu) or `.rpm` (Fedora/RHEL/CentOS) packages.
+- **macOS:** Download the `.dmg` or `.app` bundle.
+
+*(Installing via these packages automatically configures your system paths and native OS file associations for `.zesec` files!)*
+
+### 🛠️ From Source
 
 1. **Clone the repository:**
    ```bash
@@ -68,29 +78,75 @@ A modern, cross-platform application for secure file encryption, decryption, and
    pip install -r requirements.txt
    ```
 
-## 🎮 Usage
+## 🎮 Usage Journey
 
-### GUI Mode
+Zesec is designed to adapt to your workflow, whether you prefer a polished visual interface or a rapid, robust command-line experience.
 
-Launch the graphical user interface:
+### 🎨 The Visual Experience (GUI)
 
-```bash
-python3 main.py --gui
-```
+Launch the graphical user interface via your terminal, or simply double-click the compiled application executable. Thanks to our **Native OS File Associations**, you can even double-click any `.zesec` file directly from your file manager to instantly launch the decryption flow!
 
-The GUI provides a tabbed interface with:
-- **Encryption Tab** - Encrypt files with password and optional key file
-- **Decryption Tab** - Decrypt encrypted files
-- **Cleaning Tab** - Securely clean files
-- **Key Management Tab** - Generate encryption key files
+![File Type Integration](docs/images/zesec-encryption-custom-file-type.png)
 
-### Console Mode
+#### Securing Your Files
+Imagine you have a directory filled with sensitive financial records. You open the **Encryption** tab and drag-and-drop hundreds of files at once into the multi-file selector. Zesec intelligently validates your destinations and strictly enforces password confirmation to prevent accidental lockouts.
 
-Launch the interactive console:
+![Encryption Interface](docs/images/zesec-gui-encryption-start.png)
 
-```bash
-python3 main.py
-```
+As you initiate the encryption, you aren't left in the dark. Zesec smoothly processes the batch, providing real-time visual progress indicators for every single file alongside a global progress bar. Need to abort? The process cancellation feature lets you safely halt operations without corrupting data.
+
+![Encryption Ongoing](docs/images/zesec-gui-encryption-ongoing.png)
+
+#### Retrieving Your Data
+When it's time to access your files, the **Decryption** tab offers the exact same robust batch processing. Once finished, a satisfying completion screen summarizes the successful decryptions, letting you get right back to work.
+
+![Decryption Start](docs/images/zesec-gui-decryption-start.png)
+![Decryption Complete](docs/images/zesec-gui-decryption-complete.png)
+
+#### Erasing Traces Forever (Deep Cleaning)
+Simply deleting a file or moving it to the trash bin leaves the raw data sitting on your hard drive, completely vulnerable to basic data recovery tools. The **Deep Cleaning** tab is built for forensic-grade data destruction. When you initiate a deep clean, Zesec doesn't just delete the file pointer. It actively opens the file and aggressively overwrites the underlying physical disk sectors with multi-pass zero-byte buffers.
+
+![Deep Cleaning Start](docs/images/zesec-gui-deep-cleaning-start.png)
+
+Whether you are wiping a single password document or recursively destroying an entire directory of financial logs, you can watch Zesec securely erase each file one by one. Once the process is complete, the original data is permanently shredded. You have the absolute guarantee that the sensitive information has been eradicated and forensic data recovery is mathematically impossible.
+
+![Deep Cleaning Ongoing](docs/images/zesec-gui-deep-cleaning-ongoing.png)
+![Deep Cleaning Complete](docs/images/zesec-gui-deep-cleaning-complete.png)
+
+#### Key Management & Multi-Factor Security
+A strong password is great, but relying solely on human memory can sometimes be a vulnerability. For advanced users requiring an enterprise-grade layer of security, Zesec features a dedicated **Key Management** system. This allows you to generate highly secure, cryptographically random key files (`.key`).
+
+When encrypting a file, you can choose to use a Key File *in addition* to your standard text password. This effectively creates a multi-factor encryption lock: an attacker would not only need to guess your secret password, but they would also need to possess the physical key file (which you can store on an external USB drive) to ever decrypt the data.
+
+![Key Management](docs/images/zesec-gui-key-management.png)
+
+---
+
+### 💻 The Power User Experience (CLI)
+
+For those who live in the terminal, Zesec offers a completely unified experience without sacrificing a single feature. Launch the interactive console by simply running `zesec` or `python3 main.py`.
+
+Immediately, you're greeted by a smart, interactive shell powered by `prompt_toolkit`. It intuitively autocompletes commands, and the moment you press space, it transitions into system path autocompletion—drastically speeding up your workflow.
+
+![CLI Interactive Terminal](docs/images/zesec-cli-help-and-interactive-terminal.png)
+
+#### Massive Batch Operations
+When you issue a command like `encrypt folder/* -d safe_vault/`, the console springs to life. Instead of cluttering your terminal with hundreds of lines, Zesec groups the entire batch into a unified, perfectly smooth `tqdm` progress bar. 
+
+![CLI Encryption Ongoing](docs/images/zesec-cli-encryption-ongoing.png)
+
+Upon finishing, it provides a clean, silent summary of exactly how many files were successfully encrypted.
+
+![CLI Encryption Complete](docs/images/zesec-cli-encryption-complete.png)
+
+The same unified elegance applies to **Decryption**, restoring your files efficiently and cleanly.
+
+![CLI Decryption Complete](docs/images/zesec-cli-decryption-complete.png)
+
+#### Forensic Cleaning from the Terminal
+Need to securely wipe a sensitive server directory? The `clean` command operates identically to the GUI, executing multi-pass overwrites across the entire batch while visualizing the overarching progress.
+
+![CLI Deep Cleaning](docs/images/zesec-cli-deep-cleaning-ongoing.png)
 
 #### Available Commands
 
@@ -101,20 +157,21 @@ python3 main.py
 - `cd [path]` - Change directory
 
 **Encryption:**
-- `encrypt <file> [options]` - Encrypt a file
+- `encrypt <file1> [file2...] -d <dir> [options]` - Encrypt files
   - Options:
     - `--key-file <path>` - Use a key file in addition to password
     - `--no-clean` - Don't securely clean original file after encryption
-- `decrypt <file> [options]` - Decrypt a file
+- `decrypt <file1> [file2...] -d <dir> [options]` - Decrypt files
   - Options:
     - `--key-file <path>` - Key file path (required if used during encryption)
+    - `--clean` - Securely delete original encrypted file after decryption
 - `generate-key <path>` - Generate encryption key file
 
 **Cleaning:**
-- `clean <file> [options]` - Securely clean a file
+- `clean <file1> [file2...] [options]` - Securely deep clean files
   - Options:
     - `--no-delete` - Overwrite file but don't delete it
-- `clean-dir <dir> [options]` - Securely clean directory
+- `clean-dir <dir> [options]` - Securely deep clean directory
   - Options:
     - `--no-delete` - Overwrite files but don't delete them
 
@@ -123,34 +180,6 @@ python3 main.py
 - `help <command>` - Show detailed help for a command
 - `exit` or `quit` - Exit the application
 - `clear` - Clear the screen
-
-#### Example Usage
-
-```bash
-# Encrypt a file
-zesec> encrypt document.txt
-Enter password: ********
-✓ Encrypted successfully: document.txt.zesec
-
-# Decrypt a file
-zesec> decrypt document.txt.zesec
-Enter password: ********
-✓ Decrypted successfully: document.txt
-
-# Encrypt with key file
-zesec> encrypt document.txt --key-file mykey.key
-Enter password: ********
-✓ Encrypted successfully: document.txt.zesec
-
-# Generate a key file
-zesec> generate-key mykey.key
-✓ Key file generated successfully: mykey.key
-
-# Securely clean a file
-zesec> clean sensitive_file.txt
-Securely clean sensitive_file.txt? [y/N]: y
-✓ Cleaning completed successfully
-```
 
 ## 🏗️ Architecture
 
