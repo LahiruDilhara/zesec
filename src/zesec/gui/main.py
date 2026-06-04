@@ -30,10 +30,22 @@ def main() -> int:
     # Load settings
     settings = Settings.get_instance()
     
+    # Set application metadata before creating the QApplication to avoid DBus portal conflicts on Linux
+    QApplication.setApplicationName("Zesec")
+    QApplication.setOrganizationName("Zesec")
+    
+    # Set desktop file name without .desktop suffix for correct icon mapping on Linux (GNOME/Wayland)
+    QApplication.setDesktopFileName("com.lahirudilhara.zesec")
+    
     # Create QApplication
     app = QApplication(sys.argv)
-    app.setApplicationName("Zesec")
-    app.setOrganizationName("Zesec")
+    
+    from PySide6.QtGui import QIcon
+    from ..utils.asset_utils import get_asset_path
+    
+    icon_path = get_asset_path("icon/icon.png")
+    if icon_path.exists():
+        app.setWindowIcon(QIcon(str(icon_path)))
     
     # Load and apply modern dark theme QSS
     style_path = Path(__file__).parent / "style.qss"

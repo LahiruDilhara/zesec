@@ -52,6 +52,26 @@ class FileItemWidget(QWidget):
     move_up_clicked = Signal(Path)
     move_down_clicked = Signal(Path)
     
+    _zesec_pixmap = None
+    _svg_paths = {}
+    
+    @classmethod
+    def _get_cached_pixmap(cls):
+        if cls._zesec_pixmap is None:
+            icon_path = get_asset_path("icon/icon.png")
+            if icon_path.exists():
+                cls._zesec_pixmap = QPixmap(str(icon_path)).scaled(18, 18, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            else:
+                cls._zesec_pixmap = QPixmap()
+        return cls._zesec_pixmap
+
+    @classmethod
+    def _get_cached_svg_path(cls, filename: str) -> str:
+        """Get the absolute path to an SVG asset with caching."""
+        if filename not in cls._svg_paths:
+            cls._svg_paths[filename] = str(get_asset_path(f"svg/{filename}"))
+        return cls._svg_paths[filename]
+    
     def __init__(self, path: Path, parent=None):
         super().__init__(parent)
         self.path = path
@@ -59,7 +79,7 @@ class FileItemWidget(QWidget):
         
     def _get_svg_path(self, filename: str) -> str:
         """Get the absolute path to an SVG asset."""
-        return str(get_asset_path(f"svg/{filename}"))
+        return self._get_cached_svg_path(filename)
         
     def _init_ui(self):
         self.setMinimumHeight(44)
@@ -98,9 +118,8 @@ class FileItemWidget(QWidget):
         self.logo_label = QLabel()
         self.logo_label.setFixedSize(18, 18)
         if self.path.name.endswith(".zesec"):
-            icon_path = get_asset_path("icon/icon.png")
-            if icon_path.exists():
-                pixmap = QPixmap(str(icon_path)).scaled(18, 18, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            pixmap = self._get_cached_pixmap()
+            if not pixmap.isNull():
                 self.logo_label.setPixmap(pixmap)
         layout.addWidget(self.logo_label, 0)
         
@@ -109,18 +128,6 @@ class FileItemWidget(QWidget):
         self.name_label.setStyleSheet("color: #2c3e50; font-size: 13px; font-weight: 500;")
         self.name_label.setMinimumWidth(100)
         layout.addWidget(self.name_label, 1) # 1 stretch factor
-        
-        self.progress = QProgressBar()
-        self.progress.setFixedHeight(12)
-        self.progress.setTextVisible(True)
-        self.progress.setFormat("%p%")
-        self.progress.setValue(0)
-        self.progress.setStyleSheet(
-            "QProgressBar::chunk { background-color: #2ecc71; border-radius: 4px; } "
-            "QProgressBar { border: 1px solid #ced4da; border-radius: 4px; text-align: center; font-size: 9px; color: #333333; }"
-        )
-        self.progress.setVisible(False)
-        layout.addWidget(self.progress, 1)
         
         up_svg_path = self._get_svg_path("up.svg")
         self.up_btn = IconButton(up_svg_path)
@@ -139,13 +146,21 @@ class FileItemWidget(QWidget):
         
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        if hasattr(self, 'name_label') and hasattr(self, 'path'):
-            from PySide6.QtGui import QFontMetrics
-            metrics = QFontMetrics(self.name_label.font())
-            width = self.name_label.width() - 5
-            if width > 0:
-                elided = metrics.elidedText(self.path.name, Qt.ElideMiddle, width)
-                self.name_label.setText(elided)
+        if not hasattr(self, 'name_label') or not hasattr(self, 'path'):
+            return
+            
+        # Cache width to prevent expensive font metrics calculation on every minor event
+        current_width = self.name_label.width()
+        if hasattr(self, '_last_width') and self._last_width == current_width:
+            return
+        self._last_width = current_width
+            
+        from PySide6.QtGui import QFontMetrics
+        metrics = QFontMetrics(self.name_label.font())
+        width = current_width - 5
+        if width > 0:
+            elided = metrics.elidedText(self.path.name, Qt.ElideMiddle, width)
+            self.name_label.setText(elided)
         
     def _set_circle_color(self, color: str):
         self.status_circle.setStyleSheet(f"background-color: {color}; border-radius: 6px;")
@@ -158,16 +173,6 @@ class FileItemWidget(QWidget):
         self.delete_btn.setEnabled(not processing)
         self.up_btn.setEnabled(not processing)
         self.down_btn.setEnabled(not processing)
-        
-    def update_progress(self, value: int):
-        self.progress.setValue(value)
-        if value < 100:
-            if not self.progress.isVisible():
-                self.progress.setVisible(True)
-                self._set_circle_color("#f39c12") # Orange while processing
-        else:
-            self.progress.setVisible(False)
-            self._set_circle_color("#2ecc71") # Green when finished
 
 
 class MultiFileSelectorWidget(QWidget):
@@ -185,6 +190,18 @@ class MultiFileSelectorWidget(QWidget):
         super().__init__(parent)
         self._file_filter = file_filter
         self._paths: List[Path] = []
+        self._paths_set = set()
+        self._path_to_widget = {}
+        self._current_progress_widget = None
+        self._shared_progress = QProgressBar(self)
+        self._shared_progress.hide()
+        self._shared_progress.setFixedHeight(12)
+        self._shared_progress.setTextVisible(True)
+        self._shared_progress.setFormat("%p%")
+        self._shared_progress.setStyleSheet(
+            "QProgressBar::chunk { background-color: #2ecc71; border-radius: 4px; } "
+            "QProgressBar { border: 1px solid #ced4da; border-radius: 4px; text-align: center; font-size: 9px; color: #333333; }"
+        )
         self._init_ui()
         
     def _init_ui(self):
@@ -218,6 +235,7 @@ class MultiFileSelectorWidget(QWidget):
         # Page 1: List widget
         self._list_widget = QListWidget()
         self._list_widget.setSelectionMode(QListWidget.NoSelection)
+        self._list_widget.setUniformItemSizes(True)  # CRITICAL for scroll performance with large lists
         self._list_widget.setStyleSheet("QListWidget { border: none; background: transparent; outline: none; } QListWidget::item { border: none; outline: none; }")
         self._list_widget.setSpacing(5) # Give spacing between rows
         self._stack.addWidget(self._list_widget)
@@ -227,14 +245,27 @@ class MultiFileSelectorWidget(QWidget):
         self._update_ui_state()
         
     def set_processing(self, processing: bool):
-        """Disable UI elements during processing."""
+        """Disable UI elements during processing in batches to prevent UI freezing."""
+        self._processing_state = processing
         self._add_btn.setEnabled(not processing)
         self._clear_btn.setEnabled(not processing)
-        for i in range(self._list_widget.count()):
-            item = self._list_widget.item(i)
-            widget = self._list_widget.itemWidget(item)
-            if isinstance(widget, FileItemWidget):
-                widget.set_processing(processing)
+        
+        def disable_chunk(start_idx):
+            if getattr(self, '_processing_state', None) != processing:
+                return
+            count = self._list_widget.count()
+            end_idx = min(start_idx + 100, count)
+            for i in range(start_idx, end_idx):
+                item = self._list_widget.item(i)
+                widget = self._list_widget.itemWidget(item)
+                if isinstance(widget, FileItemWidget):
+                    widget.set_processing(processing)
+            
+            if end_idx < count:
+                from PySide6.QtCore import QTimer
+                QTimer.singleShot(2, lambda: disable_chunk(end_idx))
+                
+        disable_chunk(0)
                 
     def _add_files(self):
         """Open file dialog and add files."""
@@ -245,46 +276,83 @@ class MultiFileSelectorWidget(QWidget):
         if not paths:
             return
             
-        added = False
-        for path_str in paths:
-            path = Path(path_str)
-            if path not in self._paths:
-                self._paths.append(path)
-                
-                # Add to list widget
+        self._pending_paths = [Path(p) for p in paths]
+        self._added_any = False
+        
+        # Change add and clear buttons to disabled while processing
+        self._add_btn.setEnabled(False)
+        self._clear_btn.setEnabled(False)
+        
+        self._process_pending_paths()
+
+    def _process_pending_paths(self):
+        if not hasattr(self, '_pending_paths') or not self._pending_paths:
+            self._add_btn.setEnabled(True)
+            self._clear_btn.setEnabled(True)
+            if hasattr(self, '_added_any') and self._added_any:
+                self._update_ui_state()
+                self.paths_changed.emit(self.get_paths())
+                self._added_any = False
+            return
+            
+        # Process a chunk of files to keep UI responsive
+        chunk_size = 50
+        chunk = self._pending_paths[:chunk_size]
+        self._pending_paths = self._pending_paths[chunk_size:]
+        
+        self._list_widget.setUpdatesEnabled(False)
+        try:
+            for path in chunk:
+                if path not in self._paths_set:
+                    self._paths.append(path)
+                    self._paths_set.add(path)
+                    
+                    item = QListWidgetItem()
+                    item.setData(Qt.UserRole, path)
+                    self._list_widget.addItem(item)
+                    
+                    widget = FileItemWidget(path)
+                    self._path_to_widget[path] = widget
+                    widget.set_number(self._list_widget.count())
+                    widget.delete_clicked.connect(self._remove_item)
+                    widget.move_up_clicked.connect(self._move_item_up)
+                    widget.move_down_clicked.connect(self._move_item_down)
+                    item.setSizeHint(QSize(0, 45))
+                    self._list_widget.setItemWidget(item, widget)
+                    
+                    self._added_any = True
+        finally:
+            self._list_widget.setUpdatesEnabled(True)
+            
+        # Emit partial update so user can see progress (optional, but let's just wait until end or emit after chunk)
+        if self._added_any:
+            self._update_ui_state()
+            
+        # Schedule next chunk
+        from PySide6.QtCore import QTimer
+        QTimer.singleShot(10, self._process_pending_paths)
+            
+    def _redraw_list(self):
+        """Redraw the entire list based on self._paths."""
+        self._list_widget.clear()
+        self._path_to_widget.clear()
+        self._list_widget.setUpdatesEnabled(False)
+        try:
+            for i, path in enumerate(self._paths):
                 item = QListWidgetItem()
                 item.setData(Qt.UserRole, path)
                 self._list_widget.addItem(item)
                 
                 widget = FileItemWidget(path)
-                widget.set_number(self._list_widget.count())
+                self._path_to_widget[path] = widget
+                widget.set_number(i + 1)
                 widget.delete_clicked.connect(self._remove_item)
                 widget.move_up_clicked.connect(self._move_item_up)
                 widget.move_down_clicked.connect(self._move_item_down)
                 item.setSizeHint(QSize(0, 45))
                 self._list_widget.setItemWidget(item, widget)
-                
-                added = True
-                
-        if added:
-            self._update_ui_state()
-            self.paths_changed.emit(self.get_paths())
-            
-    def _redraw_list(self):
-        """Redraw the entire list based on self._paths."""
-        self._list_widget.clear()
-        for i, path in enumerate(self._paths):
-            item = QListWidgetItem()
-            item.setData(Qt.UserRole, path)
-            self._list_widget.addItem(item)
-            
-            widget = FileItemWidget(path)
-            widget.set_number(i + 1)
-            widget.delete_clicked.connect(self._remove_item)
-            widget.move_up_clicked.connect(self._move_item_up)
-            widget.move_down_clicked.connect(self._move_item_down)
-            item.setSizeHint(QSize(0, 45))
-            self._list_widget.setItemWidget(item, widget)
+        finally:
+            self._list_widget.setUpdatesEnabled(True)
             
         self._update_ui_state()
         self.paths_changed.emit(self.get_paths())
@@ -309,8 +377,9 @@ class MultiFileSelectorWidget(QWidget):
 
     def _remove_item(self, path: Path):
         """Remove an item from the list by path."""
-        if path in self._paths:
+        if path in self._paths_set:
             self._paths.remove(path)
+            self._paths_set.remove(path)
             self._redraw_list()
             
     def _update_ui_state(self):
@@ -326,17 +395,43 @@ class MultiFileSelectorWidget(QWidget):
         
     def clear(self):
         """Clear all selected files."""
+        if self._current_progress_widget:
+            self._current_progress_widget.layout().removeWidget(self._shared_progress)
+            self._shared_progress.setParent(self)
+            self._shared_progress.hide()
+            self._current_progress_widget = None
         self._paths.clear()
+        self._paths_set.clear()
+        self._path_to_widget.clear()
         self._list_widget.clear()
         self._update_ui_state()
         self.paths_changed.emit([])
 
     def update_file_progress(self, path: Path, value: int):
         """Update progress for a specific file."""
-        for i in range(self._list_widget.count()):
-            item = self._list_widget.item(i)
-            if item.data(Qt.UserRole) == path:
-                widget = self._list_widget.itemWidget(item)
-                if isinstance(widget, FileItemWidget):
-                    widget.update_progress(value)
-                break
+        if path not in self._path_to_widget:
+            return
+            
+        widget = self._path_to_widget[path]
+        
+        if self._current_progress_widget != widget:
+            if self._current_progress_widget:
+                self._current_progress_widget.layout().removeWidget(self._shared_progress)
+                self._shared_progress.setParent(self)
+                self._current_progress_widget._set_circle_color("#2ecc71")
+                
+            # Insert before up, down, delete buttons
+            insert_idx = widget.layout().count() - 3
+            widget.layout().insertWidget(insert_idx, self._shared_progress, 1)
+            self._shared_progress.show()
+            widget._set_circle_color("#f39c12")
+            self._current_progress_widget = widget
+            
+        self._shared_progress.setValue(value)
+        
+        if value >= 100:
+            widget.layout().removeWidget(self._shared_progress)
+            self._shared_progress.setParent(self)
+            self._shared_progress.hide()
+            widget._set_circle_color("#2ecc71")
+            self._current_progress_widget = None
