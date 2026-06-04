@@ -179,6 +179,7 @@ class MultiFileSelectorWidget(QWidget):
     """Widget for selecting multiple files with a list view."""
     
     paths_changed = Signal(list)
+    cancel_clicked = Signal()
     
     def __init__(self, parent=None, file_filter: str = "All Files (*)"):
         """Initialize multi-file selector.
@@ -217,8 +218,13 @@ class MultiFileSelectorWidget(QWidget):
         self._clear_btn = HoverButton("Clear All", base_color="#95a5a6")
         self._clear_btn.clicked.connect(self.clear)
         
+        self._cancel_btn = HoverButton("Cancel", base_color="#e74c3c")
+        self._cancel_btn.clicked.connect(self._on_cancel_clicked)
+        self._cancel_btn.setEnabled(False)
+        
         btn_layout.addWidget(self._add_btn)
         btn_layout.addWidget(self._clear_btn)
+        btn_layout.addWidget(self._cancel_btn)
         btn_layout.addStretch()
         layout.addLayout(btn_layout)
         
@@ -249,6 +255,7 @@ class MultiFileSelectorWidget(QWidget):
         self._processing_state = processing
         self._add_btn.setEnabled(not processing)
         self._clear_btn.setEnabled(not processing)
+        self._cancel_btn.setEnabled(processing)
         
         def disable_chunk(start_idx):
             if getattr(self, '_processing_state', None) != processing:
@@ -435,3 +442,53 @@ class MultiFileSelectorWidget(QWidget):
             self._shared_progress.hide()
             widget._set_circle_color("#2ecc71")
             self._current_progress_widget = None
+
+    def _on_cancel_clicked(self):
+        """Handle cancel button click."""
+        self._cancel_btn.setEnabled(False)
+        self.cancel_clicked.emit()
+
+    def mark_file_failed(self, path: Path):
+        """Mark a specific file as failed."""
+        if path in self._path_to_widget:
+            widget = self._path_to_widget[path]
+            if self._current_progress_widget == widget:
+                widget.layout().removeWidget(self._shared_progress)
+                self._shared_progress.setParent(self)
+                self._shared_progress.hide()
+                self._current_progress_widget = None
+            widget._set_circle_color("#e74c3c") # Red
+
+    def retain_failed_files(self, failed_paths: List[Path]):
+        """Clear successful files and retain failed ones."""
+        if not failed_paths:
+            self.clear()
+            return
+            
+        self._list_widget.clear()
+        self._path_to_widget.clear()
+        
+        self._paths = [p for p in self._paths if p in failed_paths]
+        self._paths_set = set(self._paths)
+        
+        self._list_widget.setUpdatesEnabled(False)
+        try:
+            for i, path in enumerate(self._paths):
+                item = QListWidgetItem()
+                item.setData(Qt.UserRole, path)
+                self._list_widget.addItem(item)
+                
+                widget = FileItemWidget(path)
+                self._path_to_widget[path] = widget
+                widget.set_number(i + 1)
+                widget._set_circle_color("#e74c3c") # Red
+                widget.delete_clicked.connect(self._remove_item)
+                widget.move_up_clicked.connect(self._move_item_up)
+                widget.move_down_clicked.connect(self._move_item_down)
+                item.setSizeHint(QSize(0, 45))
+                self._list_widget.setItemWidget(item, widget)
+        finally:
+            self._list_widget.setUpdatesEnabled(True)
+            
+        self._update_ui_state()
+        self.paths_changed.emit(self.get_paths())

@@ -205,6 +205,7 @@ class MainWindow(QMainWindow):
         
         # Connect signals for dynamic button state
         self._encrypt_file_selector.paths_changed.connect(lambda _: self._update_encrypt_btn_state())
+        self._encrypt_file_selector.cancel_clicked.connect(self._on_encrypt_cancel)
         self._encrypt_password.text_changed.connect(lambda _: self._update_encrypt_btn_state())
         self._encrypt_password_confirm.text_changed.connect(lambda _: self._update_encrypt_btn_state())
         self._encrypt_dest_selector.path_changed.connect(lambda _: self._update_encrypt_btn_state())
@@ -273,6 +274,7 @@ class MainWindow(QMainWindow):
         
         # Connect signals
         self._decrypt_file_selector.paths_changed.connect(lambda _: self._update_decrypt_btn_state())
+        self._decrypt_file_selector.cancel_clicked.connect(self._on_decrypt_cancel)
         self._decrypt_password.text_changed.connect(lambda _: self._update_decrypt_btn_state())
         self._decrypt_dest_selector.path_changed.connect(lambda _: self._update_decrypt_btn_state())
         self._decrypt_key_file_selector.path_changed.connect(lambda _: self._update_decrypt_btn_state())
@@ -330,6 +332,7 @@ class MainWindow(QMainWindow):
         
         # Connect signals
         self._clean_file_selector.paths_changed.connect(lambda _: self._update_clean_btn_state())
+        self._clean_file_selector.cancel_clicked.connect(self._on_clean_cancel)
         
         layout.addStretch()
         
@@ -408,6 +411,24 @@ class MainWindow(QMainWindow):
         
     # Removed _browse_key_file_save since we use directory selector
             
+    def _on_encrypt_cancel(self):
+        """Handle encryption cancellation."""
+        if self._encryption_queue:
+            self._encryption_queue.clear()
+            QMessageBox.warning(self, "Cancelled", "Batch encryption cancelled! The currently processing file will finish, but no further files will be encrypted.")
+
+    def _on_decrypt_cancel(self):
+        """Handle decryption cancellation."""
+        if self._decryption_queue:
+            self._decryption_queue.clear()
+            QMessageBox.warning(self, "Cancelled", "Batch decryption cancelled! The currently processing file will finish, but no further files will be decrypted.")
+
+    def _on_clean_cancel(self):
+        """Handle cleaning cancellation."""
+        if self._cleaning_queue:
+            self._cleaning_queue.clear()
+            QMessageBox.warning(self, "Cancelled", "Batch cleaning cancelled! The currently processing file will finish, but no further files will be cleaned.")
+            
     def _on_encrypt_clicked(self):
         """Handle encrypt button click."""
         paths = self._encrypt_file_selector.get_paths()
@@ -437,8 +458,9 @@ class MainWindow(QMainWindow):
     def _process_next_encryption(self):
         """Process the next file in the encryption queue."""
         if not self._encryption_queue:
-            successes = [r for r in self._encryption_results if r.success]
-            failures = [r for r in self._encryption_results if not r.success]
+            successes = [r for p, r in self._encryption_results if r.success]
+            failures = [r for p, r in self._encryption_results if not r.success]
+            failed_paths = [p for p, r in self._encryption_results if not r.success]
             
             msg = f"Batch encryption finished.\n\nSuccessfully encrypted: {len(successes)}\nFailed: {len(failures)}"
             if failures:
@@ -446,8 +468,12 @@ class MainWindow(QMainWindow):
                 
             QMessageBox.information(self, "Batch Encryption", msg)
             
-            # Clear form
-            self._encrypt_file_selector.clear()
+            # Update form
+            if failures:
+                self._encrypt_file_selector.retain_failed_files(failed_paths)
+            else:
+                self._encrypt_file_selector.clear()
+                
             self._encrypt_file_selector.set_processing(False)
             self._encrypt_password.clear()
             self._encrypt_password_confirm.clear()
@@ -497,8 +523,9 @@ class MainWindow(QMainWindow):
     def _process_next_decryption(self):
         """Process the next file in the decryption queue."""
         if not self._decryption_queue:
-            successes = [r for r in self._decryption_results if r.success]
-            failures = [r for r in self._decryption_results if not r.success]
+            successes = [r for p, r in self._decryption_results if r.success]
+            failures = [r for p, r in self._decryption_results if not r.success]
+            failed_paths = [p for p, r in self._decryption_results if not r.success]
             
             msg = f"Batch decryption finished.\n\nSuccessfully decrypted: {len(successes)}\nFailed: {len(failures)}"
             if failures:
@@ -506,8 +533,12 @@ class MainWindow(QMainWindow):
                 
             QMessageBox.information(self, "Batch Decryption", msg)
             
-            # Clear form
-            self._decrypt_file_selector.clear()
+            # Update form
+            if failures:
+                self._decrypt_file_selector.retain_failed_files(failed_paths)
+            else:
+                self._decrypt_file_selector.clear()
+                
             self._decrypt_file_selector.set_processing(False)
             self._decrypt_password.clear()
             self._decrypt_key_file_selector.clear()
@@ -566,17 +597,22 @@ class MainWindow(QMainWindow):
     def _process_next_cleaning(self):
         """Process the next file in the cleaning queue."""
         if not self._cleaning_queue:
-            successes = [r for r in self._cleaning_results if r[0]]
-            failures = [r for r in self._cleaning_results if not r[0]]
+            successes = [m for p, s, m in self._cleaning_results if s]
+            failures = [m for p, s, m in self._cleaning_results if not s]
+            failed_paths = [p for p, s, m in self._cleaning_results if not s]
             
             msg = f"Batch cleaning finished.\n\nSuccessfully cleaned: {len(successes)}\nFailed: {len(failures)}"
             if failures:
-                msg += "\n\nFirst error:\n" + failures[0][1]
+                msg += "\n\nFirst error:\n" + failures[0]
                 
             QMessageBox.information(self, "Batch Cleaning", msg)
             
-            # Clear form
-            self._clean_file_selector.clear()
+            # Update form
+            if failures:
+                self._clean_file_selector.retain_failed_files(failed_paths)
+            else:
+                self._clean_file_selector.clear()
+                
             self._clean_file_selector.set_processing(False)
             self._update_clean_btn_state()
             return
@@ -652,19 +688,25 @@ class MainWindow(QMainWindow):
             
     def _on_encrypt_completed(self, result: EncryptionResult):
         """Handle encryption completion."""
-        self._encryption_results.append(result)
+        if not result.success:
+            self._encrypt_file_selector.mark_file_failed(self._current_encrypt_file)
+        self._encryption_results.append((self._current_encrypt_file, result))
         self._process_next_encryption()
             
     def _on_decrypt_completed(self, result: EncryptionResult):
         """Handle decryption completion."""
-        self._decryption_results.append(result)
+        if not result.success:
+            self._decrypt_file_selector.mark_file_failed(self._current_decrypt_file)
+        self._decryption_results.append((self._current_decrypt_file, result))
         self._process_next_decryption()
             
     def _on_clean_completed(self, success: bool, message: str):
         """Handle cleaning completion."""
         if not hasattr(self, '_cleaning_results'):
             self._cleaning_results = []
-        self._cleaning_results.append((success, message))
+        if not success:
+            self._clean_file_selector.mark_file_failed(self._current_clean_file)
+        self._cleaning_results.append((self._current_clean_file, success, message))
         self._process_next_cleaning()
             
     def _on_key_completed(self, success: bool, message: str):
